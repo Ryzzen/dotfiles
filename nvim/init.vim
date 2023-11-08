@@ -46,6 +46,8 @@ set background=dark
 colorscheme gruvbox
 highlight LineNr guibg='black'
 
+nnoremap <C-c> :call system("wl-copy", @")<CR>
+
 " Insert Breakpoint fpr C/C++
 nnoremap <leader>bp o__BKPT();<CR><Esc>
 
