@@ -1,9 +1,9 @@
 @import '../../../ryzzen/.cache/wal/colors-waybar.css';
 
 @define-color backgroundlight @color3;
-@define-color backgrounddark @background;
+@define-color backgrounddark @foreground;
 @define-color workspacesbackground1 @color3;
-@define-color workspacesbackground2 @background;
+@define-color workspacesbackground2 @foreground;
 @define-color bordercolor @color3;
 @define-color textcolor1 #FFFFFF;
 @define-color textcolor2 #FFFFFF;
