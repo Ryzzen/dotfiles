@@ -85,12 +85,12 @@
 
     // CPU
     "cpu": {
-		"format": " {usage}% ",
+		"format": "  {usage}% ",
     },
 
     // Memory
     "memory": {
-		"format": " {}%"
+		"format": "  {}%"
     },
 
     // Harddisc space used
