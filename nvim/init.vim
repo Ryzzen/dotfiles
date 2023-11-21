@@ -108,6 +108,9 @@ function! s:show_documentation()
     endif
 endfunction
 
+
+let g:coc_global_extensions = ['coc-pyright']
+
 lua << EOF
 require 'nvim-treesitter.configs'.setup {
 	ensure_installed = { "c", "cpp", "lua", "vim", "vimdoc", "query" },
