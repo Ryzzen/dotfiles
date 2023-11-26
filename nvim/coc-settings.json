@@ -9,10 +9,9 @@
 			"filetypes": ["c", "cc", "cpp", "c++", "objc", "objcpp"]
 		},
 		"nix": {
-			"command": "rnix-lsp",
-			"filetypes": [
-				"nix"
-			]
+			"command": "nil",
+			"filetypes": ["nix"],
+			"rootPatterns":  ["flake.nix"]
 		}
 	}
 }
