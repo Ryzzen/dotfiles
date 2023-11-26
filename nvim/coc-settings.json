@@ -3,10 +3,16 @@
 	"suggest.triggerAfterInsertEnter": true,
 
 	"languageserver": {
-	  "ccls": {
-		"command": "ccls",
-		"rootPatterns": ["compile_flags.txt", "compile_commands.json"],
-		"filetypes": ["c", "cc", "cpp", "c++", "objc", "objcpp"]
-	  }
+		"ccls": {
+			"command": "ccls",
+			"rootPatterns": ["compile_flags.txt", "compile_commands.json"],
+			"filetypes": ["c", "cc", "cpp", "c++", "objc", "objcpp"]
+		},
+		"nix": {
+			"command": "rnix-lsp",
+			"filetypes": [
+				"nix"
+			]
+		}
 	}
 }
