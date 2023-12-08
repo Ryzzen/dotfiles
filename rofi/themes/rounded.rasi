@@ -7,7 +7,7 @@
 @import "~/.cache/wal/colors-rofi-rounded.rasi"
 
 * {
-    font:   "Roboto 12";
+    font:   "CascadiaCode 12";
 
     background-color:   transparent;
     text-color:         @fg0;
