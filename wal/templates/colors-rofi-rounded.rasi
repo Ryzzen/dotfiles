@@ -1,5 +1,5 @@
 * {{
-	bg0:    rgba({background.strip}7f);
+	bg0:    #{background.strip};
 	bg1:    #{color0.strip};
 	bg2:    #{color1.strip};
 	bg3:    #{color2.strip};
