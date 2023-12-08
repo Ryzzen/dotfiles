@@ -1,8 +1,8 @@
 * {{
-	bg3:    #{background.strip};
+	bg0:    #{background.strip};
 	bg1:    #{color0.strip};
 	bg2:    #{color1.strip};
-	bg0:    #{color2.strip};
+	bg3:    #{color2.strip};
 	fg0:    #{foreground.strip};
 	fg1:    #{color3.strip};
 	fg2:    #{color4.strip};
