@@ -86,13 +86,13 @@
     // CPU
     "cpu": {
 		"format": "  {usage}% ",
-        "on-click": "htop"
+        "on-click": "kitty -e htop"
     },
 
     // Memory
     "memory": {
 		"format": "  {}%",
-        "on-click": "htop"
+        "on-click": "kitty -e htop"
     },
 
     // Harddisc space used
@@ -100,7 +100,7 @@
         "interval": 30,
         "format": "  {percentage_used}% ",
         "path": "/",
-        "on-click": "htop"
+        "on-click": "kitty -e htop"
     }, 
     
     // Network
