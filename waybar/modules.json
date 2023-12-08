@@ -86,11 +86,13 @@
     // CPU
     "cpu": {
 		"format": "  {usage}% ",
+        "on-click": "htop"
     },
 
     // Memory
     "memory": {
 		"format": "  {}%"
+        "on-click": "htop"
     },
 
     // Harddisc space used
@@ -98,6 +100,7 @@
         "interval": 30,
         "format": "  {percentage_used}% ",
         "path": "/"
+        "on-click": "htop"
     }, 
     
     // Network
