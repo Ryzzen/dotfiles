@@ -7,7 +7,7 @@
 @import "~/.cache/wal/colors-rofi-rounded.rasi"
 
 * {
-    font:   "CascadiaCode 12";
+    font:   "Roboto 12";
 
     background-color:   transparent;
     text-color:         @fg0;
@@ -68,7 +68,7 @@ listview {
     lines:      8;
     columns:    1;
 
-    fixed-height: false;
+    fixed-height: true;
 }
 
 element {
