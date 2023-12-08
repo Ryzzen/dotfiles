@@ -1,6 +1,6 @@
 * {{
 	bg0:    #{background.strip};
-	bg1:    #{color1.strip};
+	bg1:    #{color0.strip};
 	bg2:    #{color2.strip};
 	bg3:    #{color3.strip};
 	fg0:    #{foreground.strip};
