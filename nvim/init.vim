@@ -141,3 +141,9 @@ local telescope = require('telescope')
 		}
 	}
 EOF
+
+" Bufferline init
+set termguicolors
+lua << EOF
+require("bufferline").setup{}
+EOF
