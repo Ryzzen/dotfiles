@@ -160,7 +160,7 @@ require('lualine').setup {
 		lualine_c = {'filename'},
 		lualine_x = {'encoding', 'fileformat', 'filetype'},
 		lualine_y = {'diagnostics'},
-		lualine_z = {'progress', 'selectioncount'},
+		lualine_z = {'progress'},
 	},
   ...
 }
