@@ -18,7 +18,7 @@ endif
 call plug#begin()
 
 Plug 'https://github.com/tpope/vim-commentary'
-Plug 'https://github.com/vim-airline/vim-airline'
+Plug 'nvim-lualine/lualine.nvim'
 Plug 'https://github.com/preservim/nerdtree'
 Plug 'http://github.com/tpope/vim-surround'
 Plug 'https://github.com/neoclide/coc.nvim', {'branch': 'release'}
