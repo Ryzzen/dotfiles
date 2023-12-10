@@ -155,8 +155,8 @@ local gruvbox = require'lualine.themes.gruvbox'
 require('lualine').setup {
 	options = { theme  = gruvbox },
 	sections = {
-		lualine_y = {"require'lsp-status'.status()"}
-		lualine_z = {'progress'}
+		lualine_y = {"require'lsp-status'.status()"},
+		lualine_z = {'progress'},
 	},
   ...
 }
