@@ -156,8 +156,8 @@ require('lualine').setup {
 	options = { theme  = gruvbox },
 	sections = {
 		lualine_a = {'mode'},
-		lualine_b = {'branch', 'diff'},
-		lualine_c = {'filename', 'filesize'},
+		lualine_b = {'filename', 'filesize'},
+		lualine_c = {'branch', 'diff'},
 		lualine_x = {'diagnostics'},
 		lualine_y = {'encoding', 'fileformat', 'filetype'},
 		lualine_z = {'progress'},
