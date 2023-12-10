@@ -147,3 +147,8 @@ set termguicolors
 lua << EOF
 require("bufferline").setup{}
 EOF
+
+" Lualine
+lua << END
+require('lualine').setup()
+END
