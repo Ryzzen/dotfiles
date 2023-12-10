@@ -159,7 +159,7 @@ require('lualine').setup {
 		lualine_b = {'branch', 'diff', 'diagnostics'},
 		lualine_c = {'filename'},
 		lualine_x = {'encoding', 'fileformat', 'filetype'},
-		lualine_z = {'g:coc_status'},
+		lualine_z = {'diagnostics'},
 		lualine_y = {'progress'},
 	},
   ...
