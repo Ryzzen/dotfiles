@@ -155,6 +155,10 @@ local gruvbox = require'lualine.themes.gruvbox'
 require('lualine').setup {
 	options = { theme  = gruvbox },
 	sections = {
+		lualine_a = {'mode'},
+		lualine_b = {'branch', 'diff', 'diagnostics'},
+		lualine_c = {'filename'},
+		lualine_x = {'encoding', 'fileformat', 'filetype'},
 		lualine_y = {"require'lsp-status'.status()"},
 		lualine_z = {'progress'},
 	},
