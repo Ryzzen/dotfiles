@@ -166,7 +166,7 @@ require('lualine').setup {
 		lualine_a = {},
 		lualine_b = {},
 		lualine_c = {'filename'},
-		lualine_x = {'progress', 'diagnostics'},
+		lualine_x = {'diagnostics', 'progress'},
 		lualine_y = {},
 		lualine_z = {}
   },
