@@ -163,7 +163,7 @@
     },
 	// Windows 11 VM
 	"custom/win11-vm": {
-		"format": " ",
+		"format": "",
     	"on-click": "virsh --connect qemu:///system start win11 && virt-viewer --connect qemu:///system win11",
         "tooltip": false
 	}
