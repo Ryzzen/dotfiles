@@ -91,14 +91,14 @@
 
     // Memory
     "memory": {
-		"format": "  {}%",
+		"format": "  {}%",
         "on-click": "kitty -e htop"
     },
 
     // Harddisc space used
     "disk": {
         "interval": 30,
-        "format": "  {percentage_used}% ",
+        "format": "  {percentage_used}% ",
         "path": "/",
         "on-click": "kitty -e htop"
     }, 
@@ -160,7 +160,12 @@
         "format-off": "",
         "interval": 30,
         "on-click": "blueman-manager"
-    }
+    },
+	// Windows 11 VM
+	"win11-vm": {
+		"format": "",
+    	"on-click": "virsh --connect qemu:///system start win11 && virt-viewer --connect qemu:///system win11"
+	}
 }
 
 
