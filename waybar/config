@@ -49,6 +49,7 @@
     "group/quicklinks": {
         "orientation": "horizontal",
         "modules": [
+			"custom/win11-vm"
 			"custom/chatgpt",
 			"custom/filemanager",
          ]
@@ -58,9 +59,9 @@
     "group/hardware": {
         "orientation": "horizontal",
         "modules": [
-            "disk",
             "cpu",
-            "memory"
+            "memory",
+            "disk"
         ]
     }
 }
