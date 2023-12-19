@@ -42,7 +42,8 @@
         "group/hardware",
         "battery", 
         "custom/exit",
-        "clock"
+        "clock",
+		"tray"
     ],
 
     // Group Quicklinks
