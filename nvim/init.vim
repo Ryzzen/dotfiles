@@ -54,6 +54,10 @@ xnoremap <silent> <C-c> :w !wl-copy<CR><CR>
 " Insert Breakpoint fpr C/C++
 nnoremap <leader>bp o__BKPT();<CR><Esc>
 
+" Buffer navigation
+nnoremap <S-PageUp> :bn<CR>
+nnoremap <S-PageDown> :bp<CR>
+
 " NerdTree
 let NERDTreeShowHidden=1
 nnoremap <leader>n :NERDTreeFocus<CR>
