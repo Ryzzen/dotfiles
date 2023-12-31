@@ -50,7 +50,6 @@ colorscheme gruvbox
 highlight LineNr guibg='black'
 
 " Stuff
-nnoremap <C-s> :w<CR>
 xnoremap <silent> <C-c> :w !wl-copy<CR><CR>
 
 " Insert Breakpoint fpr C/C++
