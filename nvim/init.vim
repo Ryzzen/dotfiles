@@ -61,8 +61,9 @@ nnoremap <S-PageUp> :bn<CR>
 nnoremap <S-PageDown> :bp<CR>
 nnoremap <S-q> :bd<CR>
 
-" LazyGit
+" Git
 nnoremap <leader>gg :FloatermNew lazygit<CR>
+nnoremap <leader>gb :Git blame<CR>
 
 " NerdTree
 let NERDTreeShowHidden=1
@@ -78,8 +79,6 @@ nnoremap <leader>ff :Telescope find_files<CR>
 nnoremap <leader>fg :Telescope live_grep<CR>
 nnoremap <leader>fb :Telescope buffers<CR>
 nnoremap <leader>fh :Telescope help_tags<CR>
-
-nnoremap <leader>gb :Git blame<CR>
 
 "Vista
 nnoremap <C-t> :MinimapClose<CR>:Vista!! <CR>
