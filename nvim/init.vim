@@ -49,6 +49,8 @@ set background=dark
 colorscheme gruvbox
 highlight LineNr guibg='black'
 
+" Stuff
+nnoremap <C-s> :w<CR>
 xnoremap <silent> <C-c> :w !wl-copy<CR><CR>
 
 " Insert Breakpoint fpr C/C++
@@ -57,6 +59,7 @@ nnoremap <leader>bp o__BKPT();<CR><Esc>
 " Buffer navigation
 nnoremap <S-PageUp> :bn<CR>
 nnoremap <S-PageDown> :bp<CR>
+nnoremap <S-q> :bd<CR>
 
 " NerdTree
 let NERDTreeShowHidden=1
