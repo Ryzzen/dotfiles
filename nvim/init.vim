@@ -39,6 +39,7 @@ Plug 'wfxr/minimap.vim', {'do': ':!cargo install --locked code-minimap'}
 Plug 'nvim-tree/nvim-web-devicons' " Recommended (for coloured icons)
 " Plug 'ryanoasis/vim-devicons' Icons without colours
 Plug 'akinsho/bufferline.nvim', { 'tag': '*' }
+Plug 'voldikss/vim-floaterm'
 
 call plug#end()
 
@@ -59,6 +60,9 @@ nnoremap <leader>bp o__BKPT();<CR><Esc>
 nnoremap <S-PageUp> :bn<CR>
 nnoremap <S-PageDown> :bp<CR>
 nnoremap <S-q> :bd<CR>
+
+" LazyGit
+nnoremap <leader>g :FloatermNew lazygit<CR>
 
 " NerdTree
 let NERDTreeShowHidden=1
