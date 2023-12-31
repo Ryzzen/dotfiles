@@ -62,7 +62,7 @@ nnoremap <S-PageDown> :bp<CR>
 nnoremap <S-q> :bd<CR>
 
 " LazyGit
-nnoremap <leader>g :FloatermNew lazygit<CR>
+nnoremap <leader>gg :FloatermNew lazygit<CR>
 
 " NerdTree
 let NERDTreeShowHidden=1
