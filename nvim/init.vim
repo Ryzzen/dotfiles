@@ -185,4 +185,6 @@ require('lualine').setup {
 END
 
 " Scope
+lua << END
 require("scope").setup({})
+END
