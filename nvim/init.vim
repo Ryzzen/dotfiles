@@ -39,7 +39,7 @@ Plug 'wfxr/minimap.vim', {'do': ':!cargo install --locked code-minimap'}
 Plug 'nvim-tree/nvim-web-devicons' " Recommended (for coloured icons)
 " Plug 'ryanoasis/vim-devicons' Icons without colours
 Plug 'akinsho/bufferline.nvim', { 'tag': '*' }
-Plug "tiagovla/scope.nvim"
+Plug "backdround/tabscope.nvim"
 Plug 'voldikss/vim-floaterm'
 
 call plug#end()
@@ -186,5 +186,5 @@ END
 
 " Scope
 lua << END
-require("scope").setup({})
+require("tabscope").setup({})
 END
