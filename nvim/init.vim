@@ -39,6 +39,7 @@ Plug 'wfxr/minimap.vim', {'do': ':!cargo install --locked code-minimap'}
 Plug 'nvim-tree/nvim-web-devicons' " Recommended (for coloured icons)
 " Plug 'ryanoasis/vim-devicons' Icons without colours
 Plug 'akinsho/bufferline.nvim', { 'tag': '*' }
+Plug "tiagovla/scope.nvim"
 Plug 'voldikss/vim-floaterm'
 
 call plug#end()
@@ -182,3 +183,6 @@ require('lualine').setup {
   ...
 }
 END
+
+" Scope
+require("scope").setup({})
