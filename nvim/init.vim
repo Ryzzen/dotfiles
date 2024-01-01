@@ -81,7 +81,7 @@ nnoremap <leader>fb :Telescope buffers<CR>
 nnoremap <leader>fh :Telescope help_tags<CR>
 
 "Vista
-nnoremap <C-t> :MinimapClose<CR>:Vista!! <CR>
+nnoremap <C-p> :MinimapClose<CR>:Vista!! <CR>
 
 nmap <silent> gd <Plug>(coc-definition)
 nmap <silent> gy <Plug>(coc-type-definition)
