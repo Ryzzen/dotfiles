@@ -52,6 +52,7 @@ highlight LineNr guibg='black'
 
 " Stuff
 xnoremap <silent> <C-c> :w !wl-copy<CR><CR>
+nnoremap <C-t> :tabnew<CR>
 
 " Insert Breakpoint fpr C/C++
 nnoremap <leader>bp o__BKPT();<CR><Esc>
