@@ -34,7 +34,13 @@ Plug 'https://github.com/morhetz/gruvbox'
 Plug 'https://github.com/airblade/vim-gitgutter'
 Plug 'https://github.com/tpope/vim-fugitive'
 Plug 'https://github.com/tpope/vim-rhubarb'
-Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && npx --yes yarn install' }
+
+Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() }}
+Plug 'godlygeek/tabular'
+Plug 'elzr/vim-json'
+Plug 'plasticboy/vim-markdown'
+Plug 'vim-pandoc/vim-pandoc-syntax'
+
 Plug 'wfxr/minimap.vim', {'do': ':!cargo install --locked code-minimap'}
 Plug 'nvim-tree/nvim-web-devicons' " Recommended (for coloured icons)
 Plug 'akinsho/bufferline.nvim', { 'tag': '*' }
