@@ -100,7 +100,7 @@ let g:coc_snippet_next = '<TAB>'
 let g:coc_snippet_prev = '<S-TAB>'
 
 "mdMarkdown
-nnoremap mk :FloatermNew glow <CR>
+nnoremap <leader>mk :FloatermNew glow <CR>
 
 function OpenMarkdownPreview (url)
     execute "silent ! firefox --new-window " . a:url
