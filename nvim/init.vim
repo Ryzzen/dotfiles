@@ -47,6 +47,8 @@ Plug 'akinsho/bufferline.nvim', { 'tag': '*' }
 Plug 'https://github.com/tiagovla/scope.nvim'
 Plug 'voldikss/vim-floaterm'
 
+Plug 'junegunn/vim-easy-align'
+
 call plug#end()
 
 set encoding=UTF-8
@@ -62,6 +64,12 @@ nnoremap <C-t> :tabnew<CR>
 
 " Insert Breakpoint fpr C/C++
 nnoremap <leader>bp o__BKPT();<CR><Esc>
+
+" Easy align
+" " Start interactive EasyAlign in visual mode (e.g. vipga)
+xmap ga <Plug>(EasyAlign)
+" Start interactive EasyAlign for a motion/text object (e.g. gaip)
+nmap ga <Plug>(EasyAlign)
 
 " Buffer navigation
 nnoremap <S-PageUp> :bn<CR>
