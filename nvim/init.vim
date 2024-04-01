@@ -79,7 +79,7 @@ nnoremap <C-t> :tabnew<CR>
 " Insert Breakpoint fpr C/C++
 nnoremap <leader>bp o__BKPT();<CR><Esc>
 " Automatic header files
-autocmd BufNewFile *.h r ~/nvim/templates/c_header.h
+autocmd BufNewFile *.h r ~/.config/nvim/templates/c_header.h
 autocmd BufNewFile *.h exe "1," . 14 . "g/ NAME/s//NAME " .expand("%:r")
 
 " Easy align
