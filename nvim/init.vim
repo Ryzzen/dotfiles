@@ -47,6 +47,8 @@ Plug 'akinsho/bufferline.nvim', { 'tag': '*' }
 Plug 'https://github.com/tiagovla/scope.nvim'
 Plug 'voldikss/vim-floaterm'
 
+Plug 'tamton-aquib/mpv.nvim'
+
 Plug 'junegunn/vim-easy-align'
 
 call plug#end()
