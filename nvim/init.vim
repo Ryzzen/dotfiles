@@ -53,6 +53,8 @@ Plug 'maxi0604/music.nvim'
 
 Plug 'junegunn/vim-easy-align'
 
+Plug 'jakemason/ouroboros'
+
 call plug#end()
 
 set encoding=UTF-8
@@ -78,12 +80,16 @@ nnoremap <C-t> :tabnew<CR>
 
 " Insert Breakpoint fpr C/C++
 nnoremap <leader>bp o__BKPT();<CR><Esc>
+
 " Automatic header files
 autocmd BufNewFile *.h r ~/.config/nvim/templates/c_header.h
 autocmd BufNewFile *.h exe "1," . 15 . "g/NAME/s//" . toupper(expand("%:t:r")) | 1d | 8
 
 autocmd BufNewFile *.hpp r ~/.config/nvim/templates/cpp_header.hpp
 autocmd BufNewFile *.hpp exe "1," . 7 . "g/NAME/s//" . toupper(expand("%:t:r")) | 1d | 4
+
+" Switch between header and source files
+autocmd Filetype c,cpp nnoremap <C-s> :Ouroboros<CR>
 
 " Easy align
 " " Start interactive EasyAlign in visual mode (e.g. vipga)
