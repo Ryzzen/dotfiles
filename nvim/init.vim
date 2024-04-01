@@ -48,6 +48,8 @@ Plug 'https://github.com/tiagovla/scope.nvim'
 Plug 'voldikss/vim-floaterm'
 
 Plug 'tamton-aquib/mpv.nvim'
+Plug 'rcarriga/nvim-notify'
+Plug 'AntonVanAssche/music-controls.nvim'
 
 Plug 'junegunn/vim-easy-align'
 
@@ -236,4 +238,8 @@ require("mpv").setup {
         throttle = 250,      -- Update time for the widgets. (lesser the faster)
     }
 }
+END
+
+lua << END
+_G.music_controls_default_player = 'spotify'
 END
