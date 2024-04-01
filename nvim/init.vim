@@ -63,13 +63,13 @@ colorscheme gruvbox
 highlight LineNr guibg='black'
 
 " Music player
-nnoremap <leader>mm :          MusicPlay<CR>
-nnoremap <leader>mp :          MusicPause<CR>
-nnoremap <leader>m<PageUp> :   MusicNext<CR>
-nnoremap <leader>m<PageDown> : MusicPrev<CR>
-nnoremap <leader>mc :          MusicCurrent<CR>
-nnoremap <leader>ms :          MusicShuffle<CR>
-nnoremap <leader>ml :          MusicLoop<CR>
+nnoremap <leader>mm :MusicPlay<CR>
+nnoremap <leader>mp :MusicPause<CR>
+nnoremap <leader>m<PageUp> :MusicNext<CR>
+nnoremap <leader>m<PageDown> :MusicPrev<CR>
+nnoremap <leader>mc :MusicCurrent<CR>
+nnoremap <leader>ms :MusicShuffle<CR>
+nnoremap <leader>ml :MusicLoop<CR>
 
 
 " Stuff
@@ -237,6 +237,10 @@ lua << END
 require("scope").setup({})
 END
 
+" Scope
+lua << END
+require("music").setup({})
+END
 lua << END
 _G.music_controls_default_player = 'spotify'
 END
