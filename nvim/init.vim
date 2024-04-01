@@ -63,7 +63,7 @@ colorscheme gruvbox
 highlight LineNr guibg='black'
 
 " Music player
-nnoremap <leader>mm: MusicPlay<CR>
+nnoremap <leader>mm : MusicPlay<CR>
 nnoremap <leader>mp:          MusicPause<CR>
 nnoremap <leader>m<PageUp>:   MusicNext<CR>
 nnoremap <leader>m<PageDown>: MusicPrev<CR>
