@@ -82,7 +82,7 @@ nnoremap <leader>bp o__BKPT();<CR><Esc>
 autocmd BufNewFile *.h call CHeader() 
 function CHeader()
 	r ~/.config/nvim/templates/c_header.h
-	exe "1," . 14 . "g/ NAME/s//NAME " .expand("%:r")
+	exe "1," . 14 . "g/NAME/s//NAME " .expand("%:r")
 endfunction
 
 " Easy align
