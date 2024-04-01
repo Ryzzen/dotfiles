@@ -216,7 +216,7 @@ require('lualine').setup {
 		lualine_a = {'mode'},
 		lualine_b = {'filename', 'filesize'},
 		lualine_c = {'branch', 'diff'},
-		lualine_x = {'diagnostics', 'require('music').info()'},
+		lualine_x = {'diagnostics', "require('music').info()"},
 		lualine_y = {'encoding', 'fileformat', 'filetype'},
 		lualine_z = {'progress'},
 	},
