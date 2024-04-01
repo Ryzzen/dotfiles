@@ -47,9 +47,9 @@ Plug 'akinsho/bufferline.nvim', { 'tag': '*' }
 Plug 'https://github.com/tiagovla/scope.nvim'
 Plug 'voldikss/vim-floaterm'
 
-Plug 'tamton-aquib/mpv.nvim'
 Plug 'rcarriga/nvim-notify'
 Plug 'AntonVanAssche/music-controls.nvim'
+Plug 'maxi0604/music.nvim'
 
 Plug 'junegunn/vim-easy-align'
 
@@ -216,7 +216,7 @@ require('lualine').setup {
 		lualine_a = {'mode'},
 		lualine_b = {'filename', 'filesize'},
 		lualine_c = {'branch', 'diff'},
-		lualine_x = {'diagnostics'},
+		lualine_x = {'diagnostics', 'require('music').info()'},
 		lualine_y = {'encoding', 'fileformat', 'filetype'},
 		lualine_z = {'progress'},
 	},
@@ -235,19 +235,6 @@ END
 " Scope
 lua << END
 require("scope").setup({})
-END
-
-lua << END
-require("mpv").setup {
-    width = 50,
-    height = 5,              -- Changing these two might break the UI 😬
-    border = 'single',
-    setup_widgets = false,   -- to activate the widget components
-    timer = {
-        after = 1000,
-        throttle = 250,      -- Update time for the widgets. (lesser the faster)
-    }
-}
 END
 
 lua << END
