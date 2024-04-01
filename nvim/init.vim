@@ -78,6 +78,9 @@ nnoremap <C-t> :tabnew<CR>
 
 " Insert Breakpoint fpr C/C++
 nnoremap <leader>bp o__BKPT();<CR><Esc>
+" Automatic header files
+autocmd BufNewFile *.h r templates/c_header.h
+autocmd BufNewFile *.h exe "1," . 14 . "g/ NAME/s//NAME " .expand("%:r")
 
 " Easy align
 " " Start interactive EasyAlign in visual mode (e.g. vipga)
@@ -237,10 +240,11 @@ lua << END
 require("scope").setup({})
 END
 
-" Scope
+" Music
 lua << END
 require("music").setup({})
 END
+
 lua << END
 _G.music_controls_default_player = 'spotify'
 END
