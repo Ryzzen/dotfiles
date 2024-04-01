@@ -80,7 +80,7 @@ nnoremap <C-t> :tabnew<CR>
 nnoremap <leader>bp o__BKPT();<CR><Esc>
 " Automatic header files
 autocmd BufNewFile *.h r ~/.config/nvim/templates/c_header.h
-autocmd BufNewFile *.h exe "1," . 15 . "g/NAME/s//" . toupper(expand("%:t:r"))
+autocmd BufNewFile *.h exe "1," . 15 . "g/NAME/s//" . toupper(expand("%:t:r")) . 9
 
 " Easy align
 " " Start interactive EasyAlign in visual mode (e.g. vipga)
