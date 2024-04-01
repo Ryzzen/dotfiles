@@ -79,11 +79,9 @@ nnoremap <C-t> :tabnew<CR>
 " Insert Breakpoint fpr C/C++
 nnoremap <leader>bp o__BKPT();<CR><Esc>
 " Automatic header files
-autocmd BufNewFile *.h call CHeader() 
-function CHeader()
-	r ~/.config/nvim/templates/c_header.h
-	exe "1," . 14 . "g/NAME/s//NAME " .expand("%:r")
-endfunction
+autocmd BufEnter {}
+autocmd BufNewFile *.h r ~/.config/nvim/templates/c_header.h
+autocmd BufNewFile *.h exe "1," . 14 . "g/NAME/s//NAME " .expand("%:r")
 
 " Easy align
 " " Start interactive EasyAlign in visual mode (e.g. vipga)
