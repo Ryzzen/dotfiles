@@ -291,6 +291,14 @@ require("cyberdream").setup({
             -- Complete list can be found in `lua/cyberdream/theme.lua`
         },
 
+		-- Override a color entirely
+        colors = {
+            -- For a list of colors see `lua/cyberdream/colours.lua`
+            -- Example:
+            bg = "#000000",
+            green = "#00ff00",
+            magenta = "#ff00ff",
+        },
     },
 })
 END
