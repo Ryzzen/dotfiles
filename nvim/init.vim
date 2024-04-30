@@ -66,7 +66,7 @@ set encoding=UTF-8
 
 set termguicolors
 set background=dark 
-colorscheme cyberdream
+colorscheme gruvbox
 highlight LineNr guibg='black'
 
 " Music player
