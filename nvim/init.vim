@@ -220,7 +220,9 @@ EOF
 " Bufferline init
 " set termguicolors
 lua << EOF
-require("bufferline").setup{}
+require("bufferline").setup{
+	always_show_bufferline = false
+}
 EOF
 
 " Lualine
