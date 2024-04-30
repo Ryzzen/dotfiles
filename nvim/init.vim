@@ -221,7 +221,9 @@ EOF
 " set termguicolors
 lua << EOF
 require("bufferline").setup{
-	always_show_bufferline = false
+	options = {
+		always_show_bufferline = false
+	};
 }
 EOF
 
