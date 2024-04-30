@@ -64,10 +64,10 @@ call plug#end()
 
 set encoding=UTF-8
 
-set termguicolors
+" set termguicolors
 " set background=dark 
 colorscheme cyberdream
-highlight LineNr guibg='black'
+" highlight LineNr guibg='black'
 
 " Music player
 nnoremap <leader>mm :MusicPlay<CR>
