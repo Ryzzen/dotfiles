@@ -17,8 +17,15 @@ endif
 
 call plug#begin()
 
-Plug 'https://github.com/tpope/vim-commentary'
+" Visual improvement
 Plug 'nvim-lualine/lualine.nvim'
+Plug 'https://github.com/ryanoasis/vim-devicons'
+Plug 'https://github.com/morhetz/gruvbox'
+Plug 'akinsho/bufferline.nvim', { 'tag': '*' }
+Plug 'voldikss/vim-floaterm'
+Plug 'scottmckendry/cyberdream.nvim'
+
+Plug 'https://github.com/tpope/vim-commentary'
 Plug 'https://github.com/preservim/nerdtree'
 Plug 'http://github.com/tpope/vim-surround'
 Plug 'https://github.com/neoclide/coc.nvim', {'branch': 'release'}
@@ -29,12 +36,11 @@ Plug 'https://github.com/junegunn/fzf', { 'do': { -> fzf#install() } }
 Plug 'nvim-lua/plenary.nvim'
 Plug 'nvim-telescope/telescope.nvim'
 Plug 'nvim-treesitter/nvim-treesitter'
-Plug 'https://github.com/ryanoasis/vim-devicons'
-Plug 'https://github.com/morhetz/gruvbox'
 Plug 'https://github.com/airblade/vim-gitgutter'
 Plug 'https://github.com/tpope/vim-fugitive'
 Plug 'https://github.com/tpope/vim-rhubarb'
 
+" Markdown
 Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && npx --yes yarn install' }
 Plug 'godlygeek/tabular'
 Plug 'elzr/vim-json'
@@ -43,10 +49,9 @@ Plug 'vim-pandoc/vim-pandoc-syntax'
 
 Plug 'wfxr/minimap.vim', {'do': ':!cargo install --locked code-minimap'}
 Plug 'nvim-tree/nvim-web-devicons' " Recommended (for coloured icons)
-Plug 'akinsho/bufferline.nvim', { 'tag': '*' }
 Plug 'https://github.com/tiagovla/scope.nvim'
-Plug 'voldikss/vim-floaterm'
 
+" Music control
 Plug 'rcarriga/nvim-notify'
 Plug 'AntonVanAssche/music-controls.nvim'
 Plug 'maxi0604/music.nvim'
@@ -61,7 +66,7 @@ set encoding=UTF-8
 
 set termguicolors
 set background=dark 
-colorscheme gruvbox
+colorscheme cyberdream
 highlight LineNr guibg='black'
 
 " Music player
@@ -223,7 +228,7 @@ lua << END
 local gruvbox = require'lualine.themes.gruvbox'
 
 require('lualine').setup {
-	options = { theme  = gruvbox },
+	options = { theme  = "cyberdream" },
 	sections = {
 		lualine_a = {'mode'},
 		lualine_b = {'filename', 'filesize'},
@@ -256,4 +261,44 @@ END
 
 lua << END
 _G.music_controls_default_player = 'spotify'
+END
+
+lua << END
+require("cyberdream").setup({
+    -- Enable transparent background
+    transparent = true, -- Default: false
+
+    -- Enable italics comments
+    italic_comments = true, -- Default: false
+
+    -- Replace all fillchars with ' ' for the ultimate clean look
+    hide_fillchars = true, -- Default: false
+
+    -- Modern borderless telescope theme
+    borderless_telescope = true, -- Default: true
+
+    -- Set terminal colors used in `:terminal`
+    terminal_colors = true, -- Default: true
+
+    theme = { -- Default: nil
+        highlights = {
+            -- Highlight groups to override, adding new groups is also possible
+            -- See `:help highlight-groups` for a list of highlight groups
+
+            -- Example:
+            Comment = { fg = "#696969", bg = "NONE", italic = true },
+
+            -- Complete list can be found in `lua/cyberdream/theme.lua`
+        },
+
+        -- Override a color entirely
+        colors = {
+            -- For a list of colors see `lua/cyberdream/colours.lua`
+            -- Example:
+            bg = "#000000",
+            green = "#00ff00",
+            magenta = "#ff00ff",
+        },
+    },
+})
 END
