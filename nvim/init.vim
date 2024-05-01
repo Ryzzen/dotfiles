@@ -64,9 +64,14 @@ call plug#end()
 
 set encoding=UTF-8
 
-" set termguicolors
-" colorscheme gruvbox
-" highlight LineNr guibg='black'
+set termguicolors
+colorscheme gruvbox
+"
+" Bufferline init
+set termguicolors
+lua << EOF
+require("bufferline").setup{}
+EOF
 
 lua << EOF
 require("cyberdream").setup({
@@ -231,11 +236,6 @@ local telescope = require('telescope')
 	}
 EOF
 
-" Bufferline init
-set termguicolors
-lua << EOF
-require("bufferline").setup{}
-EOF
 
 " Lualine
 lua << END
