@@ -322,6 +322,7 @@ EOF
 lua <<EOF
 -- Set up nvim-cmp.
 local cmp = require('cmp')
+local lspkind = require('lspkind')
 
 cmp.setup({
 	snippet = {
