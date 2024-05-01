@@ -41,6 +41,8 @@ Plug 'https://github.com/tpope/vim-fugitive'
 Plug 'https://github.com/tpope/vim-rhubarb'
 Plug 'rmagatti/auto-session'
 
+Plug 'kdheepak/lazygit.nvim'
+
 
 " Markdown
 Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && npx --yes yarn install' }
@@ -118,8 +120,8 @@ nnoremap <space><up> <C-W><C-k>
 nnoremap <space><down> <C-W><C-j>
 
 " Git
-nnoremap <leader>gg :FloatermNew lazygit<CR>
-nnoremap <leader>gb :Git blame<CR>
+nnoremap <silent> <leader>gg :LazyGit<CR>
+nnoremap <silent> <leader>gb :Git blame<CR>
 
 " NerdTree
 let NERDTreeShowHidden=1
