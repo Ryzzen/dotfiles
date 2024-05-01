@@ -23,7 +23,6 @@ Plug 'https://github.com/ryanoasis/vim-devicons'
 Plug 'https://github.com/morhetz/gruvbox'
 Plug 'akinsho/bufferline.nvim', { 'tag': '*' }
 Plug 'voldikss/vim-floaterm'
-Plug 'scottmckendry/cyberdream.nvim'
 
 Plug 'https://github.com/tpope/vim-commentary'
 Plug 'https://github.com/preservim/nerdtree'
@@ -68,7 +67,6 @@ set termguicolors
 set background=dark
 colorscheme gruvbox
 hi Normal guibg=NONE ctermbg=NONE
-
 " highlight LineNr guibg='dark'
 
 " Music player
