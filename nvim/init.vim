@@ -23,7 +23,7 @@ Plug 'https://github.com/ryanoasis/vim-devicons'
 Plug 'https://github.com/morhetz/gruvbox'
 Plug 'akinsho/bufferline.nvim', { 'tag': '*' }
 Plug 'voldikss/vim-floaterm'
-Plug 'nathanaelkane/vim-indent-guides'
+Plug 'lukas-reineke/indent-blankline.nvim'
 
 Plug 'https://github.com/tpope/vim-commentary'
 Plug 'https://github.com/preservim/nerdtree'
@@ -143,11 +143,6 @@ nmap <silent> gd <Plug>(coc-definition)
 nmap <silent> gy <Plug>(coc-type-definition)
 nmap <silent> gi <Plug>(coc-implementation)
 nmap <silent> gr <Plug>(coc-references)
-
-" Indent guide
-let g:indent_guides_enable_on_vim_startup = 1
-let g:indent_guides_start_level = 2
-let g:indent_guides_guide_size = 1
 
 "vscode like tab completion
 inoremap <expr> <TAB> pumvisible() ? "\<C-y>" : "\<TAB>"
@@ -291,4 +286,8 @@ lua << EOF
 require('auto-session').setup {
 	auto_session_supress_dirs = {"~/", "~/Desktop", "~/Documents", "~/Downloads", "~/Pictures", "~/Videos"},
 }
+EOF
+
+lua << EOF
+require("ibl").setup()
 EOF
