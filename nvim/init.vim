@@ -471,7 +471,6 @@ vim.api.nvim_create_autocmd("LspAttach", {
         })
       end,
       ["lua_ls"] = function()
-        -- configure lua server (with special settings)
         lspconfig["lua_ls"].setup({
           capabilities = capabilities,
           settings = {
@@ -485,6 +484,46 @@ vim.api.nvim_create_autocmd("LspAttach", {
               },
             },
           },
+        })
+      end,
+	  ["clangd"] = function()
+	    local root_files = {
+	      '.clangd',
+	      '.clang-tidy',
+	      '.clang-format',
+	      'compile_commands.json',
+	      'compile_flags.txt',
+	      'build.sh', -- buildProject
+	      'configure.ac', -- AutoTools
+	      'run',
+	      'compile',
+        }
+        lspconfig["clangd"].setup({
+          capabilities = capabilities,
+		  cmd = { "clangd",
+		    "--all-scopes-completion",
+		    "--background-index",
+		    "--clang-tidy",
+		    "--compile_args_from=filesystem", -- lsp-> does not come from compie_commands.json
+		    "--completion-parse=always",
+		    "--completion-style=bundled",
+		    "--cross-file-rename",
+		    "--debug-origin",
+		    "--enable-config", -- clangd 11+ supports reading from .clangd configuration file
+		    "--fallback-style=Qt",
+		    "--folding-ranges",
+		    "--function-arg-placeholders",
+		    "--header-insertion=iwyu",
+		    "--pch-storage=memory", -- could also be disk
+		    "--suggest-missing-includes",
+		    "-j=4",		-- number of workers
+		    "--log=error",
+	      },
+          filetypes = { "c", "cc", "cpp", "c++", "objc", "objcpp" },
+		  root_dir = function(fname)
+		    return util.root_pattern(unpack(root_files))(fname) or util.find_git_ancestor(fname)
+		  end,
+		  single_file_support = true,
         })
       end,
     })
