@@ -157,11 +157,11 @@ nnoremap <silent> <leader>fh :Telescope help_tags<CR>
 nnoremap <silent> <C-p> :MinimapClose<CR>:Vista!! <CR>
 
 nmap <silent> gr <cmd>Telescope lsp_references<CR> 
-nmap <silent> gD <Plug>(vim.lsp.buf.declaration)
+" nmap <silent> gD <Plug>(vim.lsp.buf.declaration)
 nmap <silent> gd <cmd>Telescope lsp_definitions<CR>
 nmap <silent> gi <cmd>Telescope lsp_implementations<CR>
 nmap <silent> gt <cmd>Telescope lsp_type_definitions<CR>
-nmap <silent> <leader>rn <Plug>(vim.lsp.buf.rename)
+" nmap <silent> <leader>rn <Plug>(vim.lsp.buf.rename)
 nmap <silent> K
 " nmap <silent> gd <Plug>(coc-definition)
 " nmap <silent> gy <Plug>(coc-type-definition)
