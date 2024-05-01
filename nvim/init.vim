@@ -46,6 +46,7 @@ Plug 'folke/trouble.nvim'
 
 " Auto completion
 "Plug 'https://github.com/neoclide/coc.nvim', {'branch': 'release'}
+Plug 'williamboman/mason.nvim'
 Plug 'neovim/nvim-lspconfig'
 Plug 'hrsh7th/cmp-nvim-lsp'
 Plug 'hrsh7th/cmp-buffer'
@@ -389,4 +390,27 @@ cmp.event:on(
   'confirm_done',
   cmp_autopairs.on_confirm_done()
 )
+EOF
+
+lua << EOF
+local mason = require("mason")
+local mason_lspconfig = require("mason-lspconfig")
+
+mason.setup({
+	ui = {
+		icons = {
+			package_installed = "✓",
+			package_pending = "➜",
+			package_uninstalled = "✗"
+		}
+	}	
+})
+mason_lspconfig.setup({
+	ensure_installed = {
+		"lua_ls",
+		"pyright",
+		"clangd"
+		"rnix-lsp",
+	}
+})
 EOF
