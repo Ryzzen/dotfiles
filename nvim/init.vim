@@ -80,7 +80,7 @@ require("cyberdream").setup({
 })
 EOF
 colorscheme cyberdream
-highlight LineNr guibg='#7c6f64'
+" highlight LineNr guibg='dark'
 
 " Music player
 nnoremap <leader>mm :MusicPlay<CR>
