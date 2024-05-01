@@ -111,10 +111,10 @@ nnoremap <S-q> :tabclose<CR>
 nnoremap <space> :vsplit<CR>
 nnoremap <space>h :split<CR>
 nnoremap <space>q :close<CR>
-nnoremap <S-right> <C-W><C-right>
-nnoremap <S-left> <C-W><C-left>
-nnoremap <S-up> <C-W><C-up>
-nnoremap <S-down> <C-W><C-down>
+nnoremap <space><right> <C-W><C-right>
+nnoremap <space><left> <C-W><C-left>
+nnoremap <space><up> <C-W><C-up>
+nnoremap <space><up> <C-W><C-down>
 
 " Git
 nnoremap <leader>gg :FloatermNew lazygit<CR>
