@@ -107,17 +107,17 @@ xmap ga <Plug>(EasyAlign)
 nmap ga <Plug>(EasyAlign)
 
 " Tabs/Buffer navigation
-nnoremap <S-t> :tabnew<CR>
-nnoremap <S-PageUp> :tabnext<CR>
-nnoremap <S-PageDown> :tabprevious<CR>
-nnoremap <S-q> :tabclose<CR>
-nnoremap <space>s :vsplit<CR>
-nnoremap <space>v :split<CR>
-nnoremap <space>q :close<CR>
-nnoremap <space><right> <C-W><C-l>
-nnoremap <space><left> <C-W><C-h>
-nnoremap <space><up> <C-W><C-k>
-nnoremap <space><down> <C-W><C-j>
+nnoremap <silent> <S-t> :tabnew<CR>
+nnoremap <silent> <S-PageUp> :tabnext<CR>
+nnoremap <silent> <S-PageDown> :tabprevious<CR>
+nnoremap <silent> <S-q> :tabclose<CR>
+nnoremap <silent> <space>s :vsplit<CR>
+nnoremap <silent> <space>v :split<CR>
+nnoremap <silent> <space>q :close<CR>
+nnoremap <silent> <space><right> <C-W><C-l>
+nnoremap <silent> <space><left> <C-W><C-h>
+nnoremap <silent> <space><up> <C-W><C-k>
+nnoremap <silent> <space><down> <C-W><C-j>
 
 " Git
 nnoremap <silent> <leader>gg :LazyGit<CR>
@@ -125,21 +125,21 @@ nnoremap <silent> <leader>gb :Git blame<CR>
 
 " NerdTree
 let NERDTreeShowHidden=1
-nnoremap <leader>n :NERDTreeFocus<CR>
-nnoremap <C-n> :NERDTreeToggle<CR>
-noremap <C-f> :NERDTreeFind<CR>
+nnoremap <silent> <leader>n :NERDTreeFocus<CR>
+nnoremap <silent> <C-n> :NERDTreeToggle<CR>
+noremap <silent> <C-f> :NERDTreeFind<CR>
 
 "Minimap
-nnoremap <C-m> :MinimapToggle<CR>
+nnoremap <silent> <C-m> :MinimapToggle<CR>
 
 " Telescope
-nnoremap <leader>ff :Telescope find_files<CR>
-nnoremap <leader>fg :Telescope live_grep<CR>
-nnoremap <leader>fb :Telescope buffers<CR>
-nnoremap <leader>fh :Telescope help_tags<CR>
+nnoremap <silent> <leader>ff :Telescope find_files<CR>
+nnoremap <silent> <leader>fg :Telescope live_grep<CR>
+nnoremap <silent> <leader>fb :Telescope buffers<CR>
+nnoremap <silent> <leader>fh :Telescope help_tags<CR>
 
 "Vista
-nnoremap <C-p> :MinimapClose<CR>:Vista!! <CR>
+nnoremap <silent> <C-p> :MinimapClose<CR>:Vista!! <CR>
 
 nmap <silent> gd <Plug>(coc-definition)
 nmap <silent> gy <Plug>(coc-type-definition)
