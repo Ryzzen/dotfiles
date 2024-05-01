@@ -289,5 +289,14 @@ require('auto-session').setup {
 EOF
 
 lua << EOF
-require("ibl").setup()
+require("ibl").setup {
+	config = {
+		scope = {
+			enabled = true,
+			show_start = true,
+			show_end = false,
+			injected_languages = false,
+		},
+	}
+}
 EOF
