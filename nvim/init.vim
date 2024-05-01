@@ -43,6 +43,7 @@ Plug 'rmagatti/auto-session'
 
 Plug 'kdheepak/lazygit.nvim'
 
+Plug 'folke/trouble.nvim'
 
 " Markdown
 Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && npx --yes yarn install' }
