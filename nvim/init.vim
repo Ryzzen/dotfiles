@@ -430,15 +430,15 @@ mason_lspconfig.setup_handlers({
 	  lspconfig["lua_ls"].setup({
 	    capabilities = capabilities,
 	    settings = {
-		  Lua = {
-		    -- make the language server recognize "vim" global
-		    diagnostics = {
-			  globals = { "vim" },
-		    },
-		    completion = {
-			  callSnippet = "Replace",
-		    },
-		  },
+	      Lua = {
+	        -- make the language server recognize "vim" global
+	        diagnostics = {
+	          globals = { "vim" },
+	        },
+	        completion = {
+	          callSnippet = "Replace",
+	        },
+	      },
 	    },
 	  })
 	end,
