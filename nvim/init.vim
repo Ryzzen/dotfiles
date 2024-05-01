@@ -23,7 +23,6 @@ Plug 'https://github.com/ryanoasis/vim-devicons'
 Plug 'https://github.com/morhetz/gruvbox'
 Plug 'akinsho/bufferline.nvim', { 'tag': '*' }
 Plug 'voldikss/vim-floaterm'
-Plug 'stevearc/dressing.nvim'
 
 Plug 'https://github.com/tpope/vim-commentary'
 Plug 'https://github.com/preservim/nerdtree'
@@ -39,6 +38,8 @@ Plug 'nvim-treesitter/nvim-treesitter'
 Plug 'https://github.com/airblade/vim-gitgutter'
 Plug 'https://github.com/tpope/vim-fugitive'
 Plug 'https://github.com/tpope/vim-rhubarb'
+Plug 'rmagatti/auto-session'
+
 
 " Markdown
 Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && npx --yes yarn install' }
@@ -141,6 +142,9 @@ let g:coc_snippet_prev = '<S-TAB>'
 
 "mdMarkdown
 nnoremap <leader>md :FloatermNew (glow %:p; cat) <CR>
+
+nnoremap <leader>wr :SessionRestore<CR>
+nnoremap <leader>ws :SessionSave<CR>
 
 function OpenMarkdownPreview (url)
     execute "silent ! firefox --new-window " . a:url
@@ -265,5 +269,7 @@ _G.music_controls_default_player = 'spotify'
 END
 
 lua << EOF
-require('dressing').setup({})
+require('auto-session').setup {
+	auto_session_supress_dirs = {"~/", "~/Desktop", "~/Documents", "~/Downloads", "~/Pictures", "~/Videos"},
+}
 EOF
