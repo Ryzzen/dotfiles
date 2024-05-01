@@ -64,22 +64,11 @@ call plug#end()
 
 set encoding=UTF-8
 
-" set termguicolors
-" colorscheme gruvbox
+set termguicolors
+set background=dark
+colorscheme gruvbox
+hi Normal guibg=NONE ctermbg=NONE
 
-lua << EOF
-require("cyberdream").setup({
-    -- Enable transparent background
-    transparent = true, -- Default: false
-
-    -- Enable italics comments
-    italic_comments = true, -- Default: false
-
-    -- Replace all fillchars with ' ' for the ultimate clean look
-    hide_fillchars = true, -- Default: false
-})
-EOF
-colorscheme cyberdream
 " highlight LineNr guibg='dark'
 
 " Music player
