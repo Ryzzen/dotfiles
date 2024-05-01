@@ -64,7 +64,7 @@ call plug#end()
 set encoding=UTF-8
 
 set termguicolors
-set background=dark 
+" set background=dark 
 colorscheme gruvbox
 highlight LineNr guibg='black'
 
