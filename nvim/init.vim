@@ -205,24 +205,23 @@ augroup pandoc_syntax
 augroup END
 
 
-augroup mygroup
-  autocmd!
-  " Setup formatexpr specified filetype(s).
-  autocmd FileType typescript,json setl formatexpr=CocAction('formatSelected')
-  " Update signature help on jump placeholder
-  autocmd User CocJumpPlaceholder call CocActionAsync('showSignatureHelp')
-augroup end
-" Use K to show documentation in preview window
-nnoremap <silent> K :call <SID>show_documentation()<CR>
+" augroup mygroup
+"   autocmd!
+"   " Setup formatexpr specified filetype(s).
+"   autocmd FileType typescript,json setl formatexpr=CocAction('formatSelected')
+"   " Update signature help on jump placeholder
+"   autocmd User CocJumpPlaceholder call CocActionAsync('showSignatureHelp')
+" augroup end
+" " Use K to show documentation in preview window
+" nnoremap <silent> K :call <SID>show_documentation()<CR>
 
-function! s:show_documentation()
-    if (index(['vim','help'], &filetype) >= 0)
-        execute 'h '.expand('<cword>')
-    else
-        call CocAction('doHover')
-    endif
-endfunction
-
+" function! s:show_documentation()
+"     if (index(['vim','help'], &filetype) >= 0)
+"         execute 'h '.expand('<cword>')
+"     else
+"         call CocAction('doHover')
+"     endif
+" endfunction
 
 " let g:coc_global_extensions = ['coc-pyright']
 
@@ -315,10 +314,6 @@ lua << EOF
 require("ibl").setup()
 EOF
 
-lua << EOF
-require("nvim-autopairs").setup {}
-EOF
-
 lua <<EOF
 -- Set up nvim-cmp.
 local cmp = require('cmp')
@@ -383,4 +378,15 @@ cmp.setup.cmdline({ '/', '?' }, {
 --require('lspconfig')['<YOUR_LSP_SERVER>'].setup {
 --	capabilities = capabilities
 --}
+EOF
+
+lua << EOF
+require("nvim-autopairs").setup {}
+
+local cmp_autopairs = require('nvim-autopairs.completion.cmp')
+local cmp = require('cmp')
+cmp.event:on(
+  'confirm_done',
+  cmp_autopairs.on_confirm_done()
+)
 EOF
