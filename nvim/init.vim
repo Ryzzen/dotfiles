@@ -111,8 +111,8 @@ nnoremap <S-q> :tabclose<CR>
 nnoremap <space> :vsplit<CR>
 nnoremap <space>h :split<CR>
 nnoremap <space>q :close<CR>
-nnoremap <space><right> <C-W><C-h>
-nnoremap <space><left> <C-W><C-l>
+nnoremap <space><right> <C-W><C-l>
+nnoremap <space><left> <C-W><C-h>
 nnoremap <space><up> <C-W><C-k>
 nnoremap <space><down> <C-W><C-j>
 
