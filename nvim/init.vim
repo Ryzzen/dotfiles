@@ -84,7 +84,6 @@ nnoremap <leader>ml :MusicLoop<CR>
 
 " Stuff
 xnoremap <silent> <C-c> :w !wl-copy<CR><CR>
-nnoremap <C-t> :tabnew<CR>
 
 " Insert Breakpoint fpr C/C++
 nnoremap <leader>bp o__BKPT();<CR><Esc>
@@ -106,6 +105,7 @@ xmap ga <Plug>(EasyAlign)
 nmap ga <Plug>(EasyAlign)
 
 " Tabs/Buffer navigation
+nnoremap <S-t> :tabnew<CR>
 nnoremap <S-PageUp> :tabnext<CR>
 nnoremap <S-PageDown> :tabprevious<CR>
 nnoremap <S-q> :tabclose<CR>
