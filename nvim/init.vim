@@ -108,6 +108,7 @@ require("cyberdream").setup({
 })
 EOF
 colorscheme cyberdream
+highlight LineNr guibg='black'
 
 " Music player
 nnoremap <leader>mm :MusicPlay<CR>
@@ -266,9 +267,10 @@ EOF
 " Lualine
 lua << END
 local gruvbox = require'lualine.themes.gruvbox'
+local cyberdream = require("lualine.themes.cyberdream")
 
 require('lualine').setup {
-	options = { theme  = "cyberdream" },
+	options = { theme  = cyberdream },
 	sections = {
 		lualine_a = {'mode'},
 		lualine_b = {'filename', 'filesize'},
