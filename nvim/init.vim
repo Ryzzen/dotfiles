@@ -47,6 +47,7 @@ Plug 'folke/trouble.nvim'
 " Auto completion
 "Plug 'https://github.com/neoclide/coc.nvim', {'branch': 'release'}
 Plug 'williamboman/mason.nvim'
+Plug 'williamboman/mason-lspconfig.nvim'
 Plug 'neovim/nvim-lspconfig'
 Plug 'hrsh7th/cmp-nvim-lsp'
 Plug 'hrsh7th/cmp-buffer'
