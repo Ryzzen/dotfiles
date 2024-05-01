@@ -108,7 +108,7 @@ nmap ga <Plug>(EasyAlign)
 nnoremap <S-PageUp> :tabnext<CR>
 nnoremap <S-PageDown> :tabprevious<CR>
 nnoremap <S-q> :tabclose<CR>
-nnoremap <space> :vsplit<CR>
+nnoremap <space>s :vsplit<CR>
 nnoremap <space>h :split<CR>
 nnoremap <space>q :close<CR>
 nnoremap <space><right> <C-W><C-l>
