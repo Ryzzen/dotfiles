@@ -225,7 +225,12 @@ EOF
 " Bufferline init
 set termguicolors
 lua << EOF
-require("bufferline").setup{}
+require("bufferline").setup{
+	options = {
+			mode = "tabs",
+			separator_style = "thic",
+		},
+}
 EOF
 
 " Lualine
