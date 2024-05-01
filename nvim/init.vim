@@ -114,7 +114,7 @@ nnoremap <space>q :close<CR>
 nnoremap <space><right> <C-W><C-right>
 nnoremap <space><left> <C-W><C-left>
 nnoremap <space><up> <C-W><C-up>
-nnoremap <space><up> <C-W><C-down>
+nnoremap <space><down> <C-W><C-down>
 
 " Git
 nnoremap <leader>gg :FloatermNew lazygit<CR>
