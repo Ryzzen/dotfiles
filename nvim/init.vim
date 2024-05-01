@@ -64,14 +64,8 @@ call plug#end()
 
 set encoding=UTF-8
 
-set termguicolors
-colorscheme gruvbox
-"
-" Bufferline init
-set termguicolors
-lua << EOF
-require("bufferline").setup{}
-EOF
+" set termguicolors
+" colorscheme gruvbox
 
 lua << EOF
 require("cyberdream").setup({
@@ -236,11 +230,15 @@ local telescope = require('telescope')
 	}
 EOF
 
+" Bufferline init
+set termguicolors
+lua << EOF
+require("bufferline").setup{}
+EOF
 
 " Lualine
 lua << END
 local gruvbox = require'lualine.themes.gruvbox'
-local cyberdream = require("lualine.themes.cyberdream")
 
 require('lualine').setup {
 	options = { theme  = gruvbox },
