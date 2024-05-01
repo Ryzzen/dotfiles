@@ -105,9 +105,9 @@ xmap ga <Plug>(EasyAlign)
 nmap ga <Plug>(EasyAlign)
 
 " Buffer navigation
-nnoremap <S-PageUp> :bn<CR>
-nnoremap <S-PageDown> :bp<CR>
-nnoremap <S-q> :bd<CR>
+nnoremap <S-PageUp> :tabnext<CR>
+nnoremap <S-PageDown> :tabprevious<CR>
+nnoremap <S-q> :tabclose<CR>
 
 " Git
 nnoremap <leader>gg :FloatermNew lazygit<CR>
@@ -228,7 +228,7 @@ lua << EOF
 require("bufferline").setup{
 	options = {
 			mode = "tabs",
-			separator_style = "thic",
+			separator_style = "thin",
 		},
 }
 EOF
