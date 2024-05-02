@@ -458,7 +458,7 @@ mason_lspconfig.setup_handlers({
 	      "--suggest-missing-includes",
 	      "-j=4",		-- number of workers
 	      "--log=error",
-	      "--query-driver=/nix/store/*gcc-wrapper*/bin/g++,/nix/store/*gcc-wrapper*/bin/gcc,/nix/store/*gcc-arm-embedded*/bin/g++,/nix/store/*gcc-arm-embedded*/bin/gcc",
+	      '--query-driver="/nix/store/*gcc-wrapper*/bin/g++,/nix/store/*gcc-wrapper*/bin/gcc,/nix/store/*gcc-arm-embedded*/bin/g++,/nix/store/*gcc-arm-embedded*/bin/gcc"',
 	    },
 	    filetypes = { "c", "cc", "cpp", "c++", "objc", "objcpp" },
 	    root_dir = lspconfig.util.root_pattern(unpack(root_files)),
