@@ -387,23 +387,6 @@ cmp.setup({
 	}
 })
 
--- Set configuration for specific filetype.
-cmp.setup.filetype('gitcommit', {
-	sources = cmp.config.sources({
-		{ name = 'git' }, -- You can specify the `git` source if [you were installed it](https://github.com/petertriho/cmp-git).
-	}, {
-		{ name = 'buffer' },
-	})
-})
-
--- Use buffer source for `/` and `?` (if you enabled `native_menu`, this won't work anymore).
-cmp.setup.cmdline({ '/', '?' }, {
-	mapping = cmp.mapping.preset.cmdline(),
-	sources = {
-		{ name = 'buffer' }
-	}
-})
-
 -- Set up lspconfig.
 local lspconfig = require("lspconfig")
 local mason_lspconfig = require("mason-lspconfig")
@@ -453,6 +436,7 @@ mason_lspconfig.setup_handlers({
 	    'configure.ac', -- AutoTools
 	    'run',
 	    'compile',
+		'.git',
       }
 	  lspconfig["clangd"].setup({
 	    capabilities = capabilities,
@@ -477,7 +461,7 @@ mason_lspconfig.setup_handlers({
 	    },
 	    filetypes = { "c", "cc", "cpp", "c++", "objc", "objcpp" },
 	    root_dir = function(fname)
-	      return util.root_pattern(unpack(root_files))(fname) or util.find_git_ancestor(fname)
+	      return util.root_pattern(unpack(root_files))(fname)
 	    end,
 	    single_file_support = true,
 	  })
