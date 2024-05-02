@@ -157,11 +157,11 @@ nnoremap <silent> <leader>fh :Telescope help_tags<CR>
 nnoremap <silent> <C-p> :MinimapClose<CR>:Vista!! <CR>
 
 nmap <silent> gr <cmd>Telescope lsp_references<CR> 
-nmap <silent> gD <Plug>(vim.lsp.buf.declaration)
+nmap <silent> gD <cmd>lua vim.lsp.buf.declaration()<CR>
 nmap <silent> gd <cmd>Telescope lsp_definitions<CR>
 nmap <silent> gi <cmd>Telescope lsp_implementations<CR>
 nmap <silent> gt <cmd>Telescope lsp_type_definitions<CR>
-nmap <silent> <leader>rn <Plug>(vim.lsp.buf.rename)
+nmap <silent> <leader>rn <cmd>lua vim.lsp.buf.rename()<CR>
 nmap <silent> K
 " nmap <silent> gd <Plug>(coc-definition)
 " nmap <silent> gy <Plug>(coc-type-definition)
@@ -461,11 +461,8 @@ mason_lspconfig.setup_handlers({
 	    },
 	    filetypes = { "c", "cc", "cpp", "c++", "objc", "objcpp" },
 	    root_dir = function(fname)
-	      return util.root_pattern(unpack(root_files))(fname) or util.find_git_ancestor(fname)
+	      return util.root_pattern(unpack(root_files)) or util.find_git_ancestor(fname)
 	    end,
-	    init_options = {
-	      compilationDatabasePath = vim.fn.getcwd(),
-	    },
 	    single_file_support = true,
 	  })
 	end,
