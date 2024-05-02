@@ -466,6 +466,29 @@ mason_lspconfig.setup_handlers({
 	    single_file_support = true,
 	  })
 	end,
+	["pyright"] = function()
+	  lspconfig["pyright"].setup({
+	    capabilities = capabilities,
+	    cmd = { "pyright-langserver", "--stdio" },
+	    filetypes = { "python" },
+		settings = {
+			python = {
+				analysis = {
+				  autoSearchPaths = true,
+				  diagnosticMode = "openFilesOnly",
+				  useLibraryCodeForTypes = true
+				}
+			}
+		},
+		single_file_support = true,
+	  })
+	end,
+	["rnix"] = function()
+	  lspconfig["rnix"].setup({
+	    capabilities = capabilities,
+	    filetypes = { "nix" },
+	  })
+	end,
 })
 EOF
 
