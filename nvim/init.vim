@@ -460,7 +460,7 @@ mason_lspconfig.setup_handlers({
 	      "--log=error",
 	    },
 	    filetypes = { "c", "cc", "cpp", "c++", "objc", "objcpp" },
-	    root_dir = util.root_pattern(unpack(root_files)),
+	    root_dir = lspconfig.util.root_pattern(unpack(root_files)),
 	    single_file_support = true,
 	  })
 	end,
