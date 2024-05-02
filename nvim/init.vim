@@ -162,7 +162,7 @@ nmap <silent> gd <cmd>Telescope lsp_definitions<CR>
 nmap <silent> gi <cmd>Telescope lsp_implementations<CR>
 nmap <silent> gt <cmd>Telescope lsp_type_definitions<CR>
 nmap <silent> <leader>rn <cmd>lua vim.lsp.buf.rename()<CR>
-nmap <silent> K
+nmap <silent> K <cmd>lua vim.lsp.buf.hover()<CR>
 " nmap <silent> gd <Plug>(coc-definition)
 " nmap <silent> gy <Plug>(coc-type-definition)
 " nmap <silent> gi <Plug>(coc-implementation)
