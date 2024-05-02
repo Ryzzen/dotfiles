@@ -442,6 +442,7 @@ mason_lspconfig.setup_handlers({
 	    capabilities = capabilities,
 	    cmd = { "clangd",
 	      "--all-scopes-completion",
+	      "--pretty",
 	      "--background-index",
 	      "--clang-tidy",
 	      "--compile_args_from=filesystem", -- lsp-> does not come from compie_commands.json
@@ -458,7 +459,7 @@ mason_lspconfig.setup_handlers({
 	      "--suggest-missing-includes",
 	      "-j=4",		-- number of workers
 	      "--log=error",
-	      "--query-driver=*arm-none-eabi-*",
+	      "--query-driver=/**/*",
 	    },
 	    filetypes = { "c", "cc", "cpp", "c++", "objc", "objcpp" },
 	    root_dir = lspconfig.util.root_pattern(unpack(root_files)),
