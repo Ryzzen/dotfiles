@@ -461,8 +461,11 @@ mason_lspconfig.setup_handlers({
 	    },
 	    filetypes = { "c", "cc", "cpp", "c++", "objc", "objcpp" },
 	    root_dir = function(fname)
-	      return util.root_pattern(unpack(root_files))(fname)
+	      return util.root_pattern(unpack(root_files))(fname) or util.find_git_ancestor(fname)
 	    end,
+	    init_options = {
+	      compilationDatabasePath = vim.fn.getcwd(),
+	    },
 	    single_file_support = true,
 	  })
 	end,
