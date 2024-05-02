@@ -459,7 +459,7 @@ mason_lspconfig.setup_handlers({
 	      "--suggest-missing-includes",
 	      "-j=4",		-- number of workers
 	      "--log=error",
-	      "--query-driver=/**/*",
+	      "--query-driver=**",
 	    },
 	    filetypes = { "c", "cc", "cpp", "c++", "objc", "objcpp" },
 	    root_dir = lspconfig.util.root_pattern(unpack(root_files)),
