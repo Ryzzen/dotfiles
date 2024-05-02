@@ -460,9 +460,7 @@ mason_lspconfig.setup_handlers({
 	      "--log=error",
 	    },
 	    filetypes = { "c", "cc", "cpp", "c++", "objc", "objcpp" },
-	    root_dir = function(fname)
-	      return util.root_pattern(unpack(root_files)) or util.find_git_ancestor(fname)
-	    end,
+	    root_dir = util.root_pattern(unpack(root_files)),
 	    single_file_support = true,
 	  })
 	end,
