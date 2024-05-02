@@ -444,7 +444,7 @@ mason_lspconfig.setup_handlers({
 	      "--all-scopes-completion",
 	      "--background-index",
 	      "--clang-tidy",
-	      -- "--compile_args_from=filesystem", -- lsp-> does not come from compie_commands.json
+	      "--compile_args_from=filesystem", -- lsp-> does not come from compie_commands.json
           "--completion-parse=always",
 	      "--completion-style=bundled",
 	      "--cross-file-rename",
