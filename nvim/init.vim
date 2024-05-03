@@ -86,7 +86,7 @@ set encoding=UTF-8
 
 set termguicolors
 set background=dark
-let g:everforest_transparent_background = 1
+let g:everforest_transparent_background = 2
 let g:everforest_background = 'hard'
 let g:everforest_better_performance = 1
 colorscheme everforest
