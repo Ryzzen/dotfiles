@@ -504,3 +504,6 @@ cmp.event:on(
 )
 EOF
 
+lua << EOF
+require('mini.animate').setup()
+EOF
