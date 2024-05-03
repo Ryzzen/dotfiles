@@ -88,7 +88,7 @@ set termguicolors
 set background=dark
 colorscheme everforest
 " hi Normal guibg=NONE ctermbg=NONE
-let g:everforest_transparent_background = 1
+let g:everforest_transparent_background = 2
 
 " Music player
 nnoremap <leader>mm :MusicPlay<CR>
