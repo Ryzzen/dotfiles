@@ -278,7 +278,7 @@ EOF
 
 " Lualine
 lua << END
-local gruvbox = require'lualine.themes.gruvbox'
+-- local gruvbox = require'lualine.themes.gruvbox'
 local everforest = require'lualine.themes.everforest'
 
 require('lualine').setup {
