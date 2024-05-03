@@ -87,8 +87,8 @@ set encoding=UTF-8
 set termguicolors
 set background=dark
 colorscheme everforest
-hi Normal guibg=NONE ctermbg=NONE
-" highlight LineNr guibg='dark'
+" hi Normal guibg=NONE ctermbg=NONE
+g:everforest_transparent_background = 1
 
 " Music player
 nnoremap <leader>mm :MusicPlay<CR>
