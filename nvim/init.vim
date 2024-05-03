@@ -24,7 +24,7 @@ Plug 'https://github.com/morhetz/gruvbox'
 Plug 'akinsho/bufferline.nvim', { 'tag': '*' }
 Plug 'voldikss/vim-floaterm'
 Plug 'lukas-reineke/indent-blankline.nvim'
-Plug 'echasnovski/mini.nvim', { 'branch': 'stable' }
+Plug 'echasnovski/mini.animate', { 'branch': 'stable' }
 
 Plug 'https://github.com/tpope/vim-commentary'
 Plug 'https://github.com/preservim/nerdtree'
