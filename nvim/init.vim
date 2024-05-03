@@ -127,7 +127,7 @@ nnoremap <silent> <S-PageUp> :tabnext<CR>
 nnoremap <silent> <S-PageDown> :tabprevious<CR>
 nnoremap <silent> <S-q> :tabclose<CR>
 nnoremap <silent> <space>s :vsplit<CR> <C-W><C-l>
-nnoremap <silent> <space>v :split<CR>
+nnoremap <silent> <space>v :split<CR> <C-W><C-j>
 nnoremap <silent> <space>q :close<CR>
 nnoremap <silent> <space><right> <C-W><C-l>
 nnoremap <silent> <space><left> <C-W><C-h>
