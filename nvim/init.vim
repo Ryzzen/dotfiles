@@ -24,7 +24,6 @@ Plug 'https://github.com/morhetz/gruvbox'
 Plug 'akinsho/bufferline.nvim', { 'tag': '*' }
 Plug 'voldikss/vim-floaterm'
 Plug 'lukas-reineke/indent-blankline.nvim'
-Plug 'echasnovski/mini.animate', { 'branch': 'stable' }
 
 Plug 'https://github.com/tpope/vim-commentary'
 Plug 'https://github.com/preservim/nerdtree'
@@ -502,8 +501,4 @@ cmp.event:on(
   'confirm_done',
   cmp_autopairs.on_confirm_done()
 )
-EOF
-
-lua << EOF
-require('mini.animate').setup()
 EOF
