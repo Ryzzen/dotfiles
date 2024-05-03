@@ -18,6 +18,7 @@ endif
 call plug#begin()
 
 " Visual improvement
+Plug 'sainnhe/everforest'
 Plug 'nvim-lualine/lualine.nvim'
 Plug 'https://github.com/ryanoasis/vim-devicons'
 Plug 'https://github.com/morhetz/gruvbox'
@@ -85,7 +86,7 @@ set encoding=UTF-8
 
 set termguicolors
 set background=dark
-colorscheme gruvbox
+colorscheme everforest
 hi Normal guibg=NONE ctermbg=NONE
 " highlight LineNr guibg='dark'
 
@@ -276,9 +277,10 @@ EOF
 " Lualine
 lua << END
 local gruvbox = require'lualine.themes.gruvbox'
+local everforest = require'lualine.themes.everforest'
 
 require('lualine').setup {
-	options = { theme  = gruvbox },
+	options = { theme  = everforest },
 	sections = {
 		lualine_a = {'mode'},
 		lualine_b = {'filename', 'filesize'},
