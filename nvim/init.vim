@@ -84,6 +84,17 @@ call plug#end()
 
 set encoding=UTF-8
 
+" Bufferline init
+set termguicolors
+lua << EOF
+require("bufferline").setup{
+	options = {
+			mode = "tabs",
+			separator_style = "thin",
+		},
+}
+EOF
+
 set termguicolors
 set background=dark
 let g:everforest_transparent_background = 1
@@ -263,17 +274,6 @@ local telescope = require('telescope')
 			}
 		}
 	}
-EOF
-
-" Bufferline init
-set termguicolors
-lua << EOF
-require("bufferline").setup{
-	options = {
-			mode = "tabs",
-			separator_style = "thin",
-		},
-}
 EOF
 
 " Lualine
