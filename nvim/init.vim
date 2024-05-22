@@ -510,5 +510,5 @@ cmp.event:on(
 EOF
 
 lua << EOF
-lua require("toggleterm").setup()
+require("toggleterm").setup()
 EOF
