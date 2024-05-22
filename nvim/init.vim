@@ -23,7 +23,6 @@ Plug 'nvim-lualine/lualine.nvim'
 Plug 'https://github.com/ryanoasis/vim-devicons'
 Plug 'https://github.com/morhetz/gruvbox'
 Plug 'akinsho/bufferline.nvim', { 'tag': '*' }
-Plug 'voldikss/vim-floaterm'
 Plug 'lukas-reineke/indent-blankline.nvim'
 
 Plug 'akinsho/toggleterm.nvim', {'tag' : '*'}
@@ -186,11 +185,17 @@ nnoremap gR <cmd>TroubleToggle lsp_references<cr>
 " let g:coc_snippet_next = '<TAB>'
 " let g:coc_snippet_prev = '<S-TAB>'
 
-"mdMarkdown
-nnoremap <leader>md :FloatermNew (glow %:p; cat) <CR>
-
 nnoremap <leader>wr :SessionRestore<CR>
 nnoremap <leader>ws :SessionSave<CR>
+
+" ToggleTerm
+autocmd TermEnter term://*toggleterm#*
+      \ tnoremap <silent><c-t> <Cmd>exe v:count1 . "ToggleTerm"<CR>
+" By applying the mappings this way you can pass a count to your
+" mapping to open a specific window.
+" For example: 2<C-t> will open terminal 2
+nnoremap <silent><c-t> <Cmd>exe v:count1 . "ToggleTerm"<CR>
+inoremap <silent><c-t> <Esc><Cmd>exe v:count1 . "ToggleTerm"<CR>
 
 function OpenMarkdownPreview (url)
     execute "silent ! firefox --new-window " . a:url
