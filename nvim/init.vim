@@ -190,12 +190,12 @@ nnoremap <leader>ws :SessionSave<CR>
 
 " ToggleTerm
 autocmd TermEnter term://*toggleterm#*
-      \ tnoremap <silent><C-t>exe v:count1 . "ToggleTerm"<CR>
+      \ tnoremap <silent><leader>t <cmd>exe v:count1 . "ToggleTerm"<CR>
 " By applying the mappings this way you can pass a count to your
 " mapping to open a specific window.
 " For example: 2<C-t> will open terminal 2
-nnoremap <silent><C-t>exe v:count1 . "ToggleTerm"<CR>
-inoremap <silent><C-t> <Esc>exe v:count1 . "ToggleTerm"<CR>
+nnoremap <silent><leader>t <cmd>exe v:count1 . "ToggleTerm"<CR>
+inoremap <silent><leader>t <Esc><cmd> exe v:count1 . "ToggleTerm"<CR>
 
 function OpenMarkdownPreview (url)
     execute "silent ! firefox --new-window " . a:url
