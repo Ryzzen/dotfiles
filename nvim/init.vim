@@ -26,6 +26,8 @@ Plug 'akinsho/bufferline.nvim', { 'tag': '*' }
 Plug 'voldikss/vim-floaterm'
 Plug 'lukas-reineke/indent-blankline.nvim'
 
+Plug 'akinsho/toggleterm.nvim', {'tag' : '*'}
+
 Plug 'https://github.com/tpope/vim-commentary'
 Plug 'https://github.com/preservim/nerdtree'
 Plug 'http://github.com/tpope/vim-surround'
@@ -505,4 +507,8 @@ cmp.event:on(
   'confirm_done',
   cmp_autopairs.on_confirm_done()
 )
+EOF
+
+lua << EOF
+lua require("toggleterm").setup()
 EOF
