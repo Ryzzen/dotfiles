@@ -521,4 +521,5 @@ EOF
 
 lua << EOF
 require('render-markdown').setup({})
+require('render-markdown').toggle()
 EOF
