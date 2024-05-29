@@ -61,6 +61,7 @@ Plug 'saadparwaiz1/cmp_luasnip'
 Plug 'onsails/lspkind.nvim'
 
 " Markdown
+Plug 'https://github.com/MeanderingProgrammer/markdown.nvim'
 Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && npx --yes yarn install' }
 Plug 'godlygeek/tabular'
 Plug 'elzr/vim-json'
@@ -516,4 +517,8 @@ EOF
 
 lua << EOF
 require("toggleterm").setup()
+EOF
+
+lua << EOF
+require('render-markdown').setup({})
 EOF
