@@ -95,6 +95,7 @@ colorscheme everforest
 
 " vimspector
 let g:vimspector_base_dir=expand('$HOME/.local/share/nvim/plugged/vimspector')
+let g:vimspector_enable_mappings = 'HUMAN'
 
 " Music player
 nnoremap <leader>mm :MusicPlay<CR>
