@@ -78,6 +78,9 @@ Plug 'windwp/nvim-autopairs'
 
 Plug 'jakemason/ouroboros'
 
+" Debug
+Plug 'puremourning/vimspector'
+
 call plug#end()
 
 set encoding=UTF-8
@@ -164,10 +167,6 @@ nmap <silent> gi <cmd>Telescope lsp_implementations<CR>
 nmap <silent> gt <cmd>Telescope lsp_type_definitions<CR>
 nmap <silent> <leader>rn <cmd>lua vim.lsp.buf.rename()<CR>
 nmap <silent> K <cmd>lua vim.lsp.buf.hover()<CR>
-" nmap <silent> gd <Plug>(coc-definition)
-" nmap <silent> gy <Plug>(coc-type-definition)
-" nmap <silent> gi <Plug>(coc-implementation)
-" nmap <silent> gr <Plug>(coc-references)
 
 " Trouble
 nnoremap <leader>xx <cmd>TroubleToggle<cr>
@@ -203,26 +202,6 @@ autocmd FileType markdown nnoremap ms <Plug>MarkdownPreview
 autocmd FileType markdown nnoremap mst <Plug>MarkdownPreviewStop
 autocmd FileType markdown nnoremap mp <Plug>MarkdownPreviewToggle
 
-
-" augroup mygroup
-"   autocmd!
-"   " Setup formatexpr specified filetype(s).
-"   autocmd FileType typescript,json setl formatexpr=CocAction('formatSelected')
-"   " Update signature help on jump placeholder
-"   autocmd User CocJumpPlaceholder call CocActionAsync('showSignatureHelp')
-" augroup end
-" " Use K to show documentation in preview window
-" nnoremap <silent> K :call <SID>show_documentation()<CR>
-
-" function! s:show_documentation()
-"     if (index(['vim','help'], &filetype) >= 0)
-"         execute 'h '.expand('<cword>')
-"     else
-"         call CocAction('doHover')
-"     endif
-" endfunction
-
-" let g:coc_global_extensions = ['coc-pyright']
 
 lua << EOF
 require 'nvim-treesitter.configs'.setup {
