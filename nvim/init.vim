@@ -94,7 +94,7 @@ colorscheme everforest
 " hi Normal guibg=NONE ctermbg=NONE
 
 " vimspector
-let g:vimspector_base_dir='/home/ryzzen/.local/share/nvim/plugged/vimspector'
+let g:vimspector_base_dir=expand( '$HOME/.vim/vimspector-config' )
 
 " Music player
 nnoremap <leader>mm :MusicPlay<CR>
