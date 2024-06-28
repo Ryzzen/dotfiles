@@ -93,6 +93,9 @@ let g:everforest_better_performance = 1
 colorscheme everforest
 " hi Normal guibg=NONE ctermbg=NONE
 
+" vimspector
+let g:vimspector_base_dir='/home/ryzzen/.local/share/nvim/plugged/vimspector'
+
 " Music player
 nnoremap <leader>mm :MusicPlay<CR>
 nnoremap <leader>mp :MusicPause<CR>
