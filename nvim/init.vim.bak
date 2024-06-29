@@ -316,6 +316,8 @@ mason_lspconfig.setup({
 		"pyright",
 		"clangd",
 		"rnix",
+		"black",
+		"nixpkgs-fmt",
 	}
 })
 EOF
