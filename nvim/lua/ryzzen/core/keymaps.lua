@@ -4,7 +4,8 @@ local keymap = vim.keymap
 
 keymap.set("n", "<leader>nh", ":nohl<CR>", { desc = "Clear search highlights" })
 
-keymap.set("n", "<C-C>", "+y", { desc = "Copy paste to desktop clipboard" })
+keymap.set("n", "<C-S-y>", '"+y', { desc = "Copy paste to desktop clipboard", silent = true })
+keymap.set("v", "<C-S-y>", '"+y', { desc = "Copy paste to desktop clipboard", silent = true })
 
 -- increment/decrement numbers
 keymap.set("n", "<leader>+", "<C-a>", { desc = "Increment number" }) -- increment
