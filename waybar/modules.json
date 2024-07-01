@@ -84,13 +84,13 @@
   // CPU
   "cpu": {
     "format": "  {usage}% ",
-    "on-click": "kitty -e htop"
+    "on-click": "kitty --class floatterm -e btop"
   },
 
   // Memory
   "memory": {
     "format": "  {}%",
-    "on-click": "kitty -e htop"
+    "on-click": "kitty --class floatterm -e btop"
   },
 
   // Harddisc space used
