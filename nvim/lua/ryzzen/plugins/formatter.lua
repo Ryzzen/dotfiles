@@ -23,6 +23,7 @@ return {
 				c = { "clang-format" },
 				cpp = { "clang-format" },
 				nix = { "nixpkgs-fmt" },
+				java = { "google-format-format" },
 			},
 			format_on_save = {
 				lsp_fallback = true,
