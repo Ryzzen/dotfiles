@@ -39,6 +39,7 @@ return {
 				"pyright",
 				"clangd",
 				"rnix",
+				"jdtls",
 			},
 		})
 
