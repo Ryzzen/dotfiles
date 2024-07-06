@@ -1,7 +1,9 @@
 return {
 	"danymat/neogen",
 	config = function()
-		require("neogen").setup({})
+		require("neogen").setup({
+			snippet_engine = "luasnip",
+		})
 
 		-- Keymaps
 		local keymap = vim.keymap
