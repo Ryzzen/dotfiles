@@ -27,7 +27,7 @@ return {
 			on_attach = my_on_attach,
 			view = {
 				width = 35,
-				relativenumber = true,
+				relativenumber = false,
 			},
 			-- change folder arrow icons
 			renderer = {
