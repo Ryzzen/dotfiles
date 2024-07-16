@@ -5,6 +5,10 @@ vim.cmd("filetype on")
 opt.relativenumber = true
 opt.number = true
 
+-- Folds
+vim.opt.foldmethod = "expr"
+vim.opt.foldexpr = "nvim_treesitter#foldexpr()"
+
 -- tabs & indentation
 opt.tabstop = 2 -- 2 spaces for tabs (prettier default)
 opt.shiftwidth = 2 -- 2 spaces for indent width
