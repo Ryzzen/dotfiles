@@ -5,25 +5,6 @@ vim.cmd("filetype on")
 opt.relativenumber = true
 opt.number = true
 
--- -- Folds
--- function MyFoldText()
--- 	local foldstart = vim.v.foldstart
--- 	local foldend = vim.v.foldend
--- 	local nl = foldend - foldstart + 1
-
--- 	local title = vim.fn.substitute(vim.fn.getline(foldstart), "^ *", "", 1)
--- 	local linetext = vim.fn.substitute(vim.fn.getline(foldstart + 1), "^ *", "", 1)
-
--- 	local txt = "+ " .. title .. "... " .. linetext .. " [" .. nl .. "]"
--- 	return txt
--- end
-
--- opt.foldmethod = "expr"
--- opt.foldexpr = "v:lua.vim.treesitter.foldexpr()"
--- opt.foldtext = "v:lua.MyFoldText()"
--- opt.fillchars:append("fold: ")
--- opt.foldlevelstart = 99
-
 -- tabs & indentation
 opt.tabstop = 2 -- 2 spaces for tabs (prettier default)
 opt.shiftwidth = 2 -- 2 spaces for indent width
