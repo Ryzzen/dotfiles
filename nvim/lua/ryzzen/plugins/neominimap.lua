@@ -1,5 +1,6 @@
 return {
 	"Isrothy/neominimap.nvim",
+	dependencies = { "lewis6991/gitsigns.nvim" },
 	enabled = true,
 	lazy = false, -- NOTE: NO NEED to Lazy load
 	-- Optional
@@ -19,11 +20,16 @@ return {
 		-- { "<leader>nbo", "<cmd>Neominimap bufOn<cr>", desc = "Enable minimap for current buffer" },
 		-- { "<leader>nbc", "<cmd>Neominimap bufOff<cr>", desc = "Disable minimap for current buffer" },
 	},
-	init = function()
+	config = function()
+		require("gitsigns").setup()
 		vim.opt.wrap = false -- Recommended
 		vim.opt.sidescrolloff = 36 -- It's recommended to set a large value
 		vim.g.neominimap = {
 			auto_enable = true,
 		}
+		-- Keymaps
+		local keymap = vim.keymap
+
+		keymap.set("n", "<C-m>", "<cmd>Neominimap toggle<cr>", { desc = "Toggle minimap" })
 	end,
 }
