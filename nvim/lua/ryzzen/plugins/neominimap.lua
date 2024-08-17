@@ -47,7 +47,12 @@ return {
 			-- Accepts all usual border style options (e.g., "none", "rounded", "solid", "shadow" "single", "double")
 			window_border = "none", ---@type string | string[] | [string, string][]
 			-- Width of the minimap window
-			minimap_width = 15, ---@type integer
+			minimap_width = 10, ---@type integer
+			-- How many columns a dot should span
+			x_multiplier = 8, ---@type integer
+
+			-- How many rows a dot should span
+			y_multiplier = 1, ---@type integer
 		}
 	end,
 	config = function()
