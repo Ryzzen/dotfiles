@@ -22,6 +22,8 @@ return {
 			"<cmd>Gitsigns undo_stage_hunk<CR>",
 			{ desc = "Perform git stage on current hunk" }
 		)
+		keymap.set("n", "<leader>grr", "<cmd>Gitsigns reset_hunk<CR>", { desc = "Undo hunk changes" })
+		keymap.set("n", "<leader>gra", "<cmd>Gitsigns reset_buffer<CR>", { desc = "Undo buffer changes" })
 
 		keymap.set("n", "<C-g>n", "<cmd>Gitsigns next_hunk<CR>", { desc = "Go to next hunk" })
 		keymap.set("n", "<C-g>p", "<cmd>Gitsigns prev_hunk<CR>", { desc = "Go to previous hunk" })
