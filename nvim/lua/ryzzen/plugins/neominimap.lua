@@ -43,16 +43,21 @@ return {
 				-- Automatically switch focus to minimap when clicked
 				auto_switch_focus = true, ---@type boolean
 			},
-			-- Border style of the floating window
-			-- Accepts all usual border style options (e.g., "none", "rounded", "solid", "shadow" "single", "double")
-			window_border = "none", ---@type string | string[] | [string, string][]
-			-- Width of the minimap window
-			minimap_width = 10, ---@type integer
+
 			-- How many columns a dot should span
-			x_multiplier = 8, ---@type integer
+			x_multiplier = 16, ---@type integer
 
 			-- How many rows a dot should span
 			y_multiplier = 1, ---@type integer
+
+			layout = "float", ---@type Neominimap.Config.LayoutType
+			float = {
+				-- Border style of the floating window
+				-- Accepts all usual border style options (e.g., "none", "rounded", "solid", "shadow" "single", "double")
+				window_border = "none", ---@type string | string[] | [string, string][]
+				-- Width of the minimap window
+				minimap_width = 10, ---@type integer
+			},
 		}
 	end,
 	config = function()
