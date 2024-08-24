@@ -22,7 +22,8 @@ return {
 				python = { "isort", "black" },
 				c = { "clang-format" },
 				cpp = { "clang-format" },
-				nix = { "nixpkgs-fmt" },
+				-- nix = { "nixpkgs-fmt" },
+				nix = { "nixfmt" }, -- NOTE: Not supported by Mason
 				java = { "google-java-format" },
 			},
 			format_on_save = {
