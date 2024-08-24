@@ -3,7 +3,7 @@ return {
 	dependencies = { "lewis6991/gitsigns.nvim" },
 	config = function()
 		require("satellite").setup({
-			current_only = true,
+			current_only = false,
 			winblend = 0,
 			zindex = 40,
 			excluded_filetypes = {},
