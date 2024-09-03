@@ -19,3 +19,13 @@ autocmd("BufNewFile", {
 	pattern = "*.hpp",
 	command = "exe '1,' . 7 . 'g/NAME/s//' . toupper(expand('%:t:r')) | 1d | 4",
 })
+
+-- Python pwn header
+autocmd("BufNewFile", {
+	pattern = "*.pwn.py",
+	command = "r ~/.config/nvim/templates/pwn_template.py",
+})
+autocmd("BufNewFile", {
+	pattern = "*.pwn.py",
+	command = "exe '1,' . 18 . 'g/NAME/s//' . expand('%:t:r') | 1d | 15",
+})
