@@ -25,6 +25,7 @@ def start(argv=[], *a, **kw):
 
 
 gdbscript = """
+tar ext :1234
 continue
 """.format(
     **locals()
