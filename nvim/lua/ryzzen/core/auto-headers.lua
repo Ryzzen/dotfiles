@@ -27,5 +27,5 @@ autocmd("BufNewFile", {
 })
 autocmd("BufNewFile", {
 	pattern = "*.pwn.py",
-	command = "exe '1,' . 39 . 'g/NAME/s//' . expand('%:t:r:r') | 1d | 36",
+	command = "exe '1,' . 42 . 'g/NAME/s//' . expand('%:t:r:r') | 1d | 39",
 })

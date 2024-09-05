@@ -12,20 +12,23 @@ def start(argv=[], *a, **kw):
     if args.GDB:
         return gdb.debug([exe.path] + argv, gdbscript=gdbscript, *a, **kw)
     elif args.SSH:
-        return ssh(
-            user="",
-            host="",
-            port=0,
-            password="",
-        ).process("./NAME")
+        s = ssh(
+            user="root",
+            host="172.22.0.2",
+            port=22,
+            password="poun",
+        )
+        if args.GDB:
+            return gdb.debug(exe.path, exe="NAME", ssh=s, gdbscript=gdbscript)
+        else:
+            return s.system("NAME")
     elif args.REM:
-        return remote(host="", port=0)
+        return remote(host="127.0.0.1", port=8080)
     else:
         return process([exe.path] + argv, *a, **kw)
 
 
 gdbscript = """
-tar ext :1234
 continue
 """.format(
     **locals()
