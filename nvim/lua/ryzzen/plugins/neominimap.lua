@@ -45,7 +45,7 @@ return {
 			},
 
 			-- How many columns a dot should span
-			x_multiplier = 16, ---@type integer
+			x_multiplier = 8, ---@type integer
 
 			-- How many rows a dot should span
 			y_multiplier = 1, ---@type integer
