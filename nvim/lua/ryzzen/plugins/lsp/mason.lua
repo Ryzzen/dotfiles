@@ -40,8 +40,8 @@ return {
 				"clangd",
 				"rnix",
 				"jdtls",
-				"docker-compose-language-service",
-				"dockerfile-language-server",
+				"docker_compose_language_service",
+				"dockerls",
 			},
 		})
 
