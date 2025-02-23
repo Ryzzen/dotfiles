@@ -163,7 +163,7 @@
   "custom/win11-vm": {
     "format": "  ",
     "on-click": "virsh --connect qemu:///system start win11 && virt-viewer --connect qemu:///system win11"
-  }
+  },
   "custom/android-emulator": {
     "format": " ",
     "on-click": "run-test-emulator"
