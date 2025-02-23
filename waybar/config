@@ -51,7 +51,7 @@
         "modules": [
 			"custom/chatgpt",
 			"custom/filemanager",
-			"custom/win11-vm"
+			"custom/win11-vm",
 			"custom/android-emulator"
          ]
     },
