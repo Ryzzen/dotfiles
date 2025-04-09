@@ -1,11 +1,11 @@
-require("lazy").setup({
-	rocks = {
-		hererocks = true, -- recommended if you do not have global installation of Lua 5.1.
+return {
+	"vhyrro/luarocks.nvim",
+	priority = 1001, -- this plugin needs to run before anything else
+	opts = {
+		rocks = { "magick" },
 	},
-	specs = {
-		{
-			"3rd/image.nvim",
-			opts = {},
-		},
-	},
-})
+}, {
+	"3rd/image.nvim",
+	dependencies = { "luarocks.nvim" },
+	opts = {},
+}
