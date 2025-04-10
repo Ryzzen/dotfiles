@@ -1,6 +1,8 @@
 return {
 	"MeanderingProgrammer/render-markdown.nvim",
 	enabled = true,
+	lazy = true,
+	ft = "markdown",
 	opts = {
 		bullet = {
 			-- Turn on / off list bullet rendering
