@@ -3,6 +3,8 @@ return {
 	dependencies = {
 		"3rd/image.nvim",
 	},
+	lazy = true,
+	ft = "markdown",
 	opts = { -- you can just pass {}, defaults below
 		events = {
 			render_buffer = { "InsertLeave", "BufWinEnter", "TextChanged" },
