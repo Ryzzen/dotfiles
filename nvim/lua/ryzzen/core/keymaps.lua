@@ -33,3 +33,4 @@ keymap.set("n", "<space>K", "<C-W>K", { desc = "Move window to the top" })
 keymap.set("n", "<space>L", "<C-W>L", { desc = "Move window to the right" })
 
 keymap.set("n", "<leader>bp", "__BKPT();", { desc = "Insert breakpoint for C/C++" })
+keymap.set("n", "<space>;", "mzA;<Esc>`z", { desc = "Append ; to end of line" })

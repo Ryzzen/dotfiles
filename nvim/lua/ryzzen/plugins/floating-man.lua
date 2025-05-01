@@ -5,7 +5,7 @@ return {
 	config = function()
 		-- Keymaps
 		local keymap = vim.keymap
-		keymap.set("n", "m", function()
+		keymap.set("n", "<leader>m", function()
 			require("floating-man").floating_man_page()
 		end, { desc = "Open floating man page" })
 	end,

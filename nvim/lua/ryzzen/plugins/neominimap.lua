@@ -64,6 +64,6 @@ return {
 		-- Keymaps
 		local keymap = vim.keymap
 
-		keymap.set("n", "<C-m>", "<cmd>Neominimap toggle<cr>", { desc = "Toggle minimap" })
+		keymap.set("n", "<leader>n", "<cmd>Neominimap toggle<cr>", { desc = "Toggle minimap" })
 	end,
 }
