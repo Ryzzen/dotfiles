@@ -45,7 +45,7 @@ def main():
     )
     panes["legend"] = (
         os.popen(
-            'tmux resize-pane -t {top} -y +5 \; split-window -P -F"#{pane_tty}" -h -t {top} -l 35% -d "cat -"'
+            'tmux split-window -P -F"#{pane_tty}" -h -t {top} -l 35% -d "cat -" \; resize-pane -t {top} -y +5 '
         )
         .read()
         .strip()
