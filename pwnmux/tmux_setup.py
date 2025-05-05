@@ -1,9 +1,10 @@
 # How to use:
 # gef> source /path/to/tmux_setup.py
 
-import os
-import gdb
 import atexit
+import os
+
+import gdb
 
 
 def main():
@@ -43,7 +44,9 @@ def main():
         .strip()
     )
     panes["legend"] = (
-        os.popen('tmux split-window -P -F"#{pane_tty}" -h -t {top} -l 35% -d "cat -"')
+        os.popen(
+            'tmux resize-pane -t {top} -y +5 \; split-window -P -F"#{pane_tty}" -h -t {top} -l 35% -d "cat -"'
+        )
         .read()
         .strip()
     )
@@ -71,9 +74,9 @@ def main():
             )
 
     # set more config
-    gdb.execute(f"gef config context_code.nb_lines 16", to_string=True)
+    gdb.execute(f"gef config context_code.nb_lines 18", to_string=True)
     # gdb.execute(f"gef config context_code.nb_lines_prev 4", to_string=True)
-    gdb.execute(f"gef config context_stack.nb_lines 12", to_string=True)
+    gdb.execute(f"gef config context_stack.nb_lines 16", to_string=True)
 
     # add atexit
     gdb.execute("pi atexit.register(GefTmuxSetupCommand.reset_panes)", to_string=True)
