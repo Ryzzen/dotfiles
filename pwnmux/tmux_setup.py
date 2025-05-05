@@ -28,13 +28,13 @@ def main():
     +--------+--------+--------+
     """
     panes = {}
-    panes["code"] = (
+    panes["stack"] = (
         os.popen('tmux split-window -P -F"#{pane_tty}" -vb -l 75% -d "cat -"')
         .read()
         .strip()
     )
-    panes["stack"] = (
-        os.popen('tmux split-window -P -F"#{pane_tty}" -v -t {top} -l 40% -d "cat -"')
+    panes["code"] = (
+        os.popen('tmux split-window -P -F"#{pane_tty}" -v -t {top} -l 30% -d "cat -"')
         .read()
         .strip()
     )
@@ -72,9 +72,9 @@ def main():
             )
 
     # set more config
-    gdb.execute(f"gef config context_code.nb_lines 18", to_string=True)
+    gdb.execute(f"gef config context_code.nb_lines 6", to_string=True)
     # gdb.execute(f"gef config context_code.nb_lines_prev 4", to_string=True)
-    gdb.execute(f"gef config context_stack.nb_lines 20", to_string=True)
+    gdb.execute(f"gef config context_stack.nb_lines 22", to_string=True)
 
     # add atexit
     gdb.execute("pi atexit.register(GefTmuxSetupCommand.reset_panes)", to_string=True)
