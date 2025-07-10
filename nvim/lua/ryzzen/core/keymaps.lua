@@ -34,20 +34,3 @@ keymap.set("n", "<space>L", "<C-W>L", { desc = "Move window to the right" })
 
 keymap.set("n", "<leader>bp", "__BKPT();", { desc = "Insert breakpoint for C/C++" })
 keymap.set("n", ";", "mzA;<Esc>`z", { desc = "Append ; to end of line" })
-
--- Luasnip
-local ls = require("luasnip")
-
--- Jump forward
-keymap.set({ "i", "s" }, "<Tab>", function()
-	if ls.jumpable(1) then
-		ls.jump(1)
-	end
-end, { silent = true })
-
--- Jump backward
-keymap.set({ "i", "s" }, "<S-Tab>", function()
-	if ls.jumpable(-1) then
-		ls.jump(-1)
-	end
-end, { silent = true })
