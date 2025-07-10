@@ -8,6 +8,6 @@ return {
 		-- Keymaps
 		local keymap = vim.keymap
 
-		keymap.set("n", "<leader>dc", "<cmd>Neogen<CR>", { desc = "Play music" })
+		keymap.set("n", "<leader>cd", "<cmd>Neogen<CR>", { desc = "Generate function header" })
 	end,
 }
