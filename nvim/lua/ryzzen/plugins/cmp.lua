@@ -54,6 +54,11 @@ return {
 					ellipsis_char = "...",
 					show_labelDetails = true, -- show labelDetails in menu. Disabled by default
 				}),
+				fields = { "abbr", "kind", "menu" },
+				expandable_indicator = true,
+			},
+			experimental = {
+				ghost_text = true,
 			},
 		})
 	end,
