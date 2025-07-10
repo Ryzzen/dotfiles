@@ -67,6 +67,8 @@ return {
 		vim.keymap.set({ "i", "s" }, "<Tab>", function()
 			if luasnip.jumpable(1) then
 				luasnip.jump(1)
+			else
+				vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Tab>", true, false, true), "n", true)
 			end
 		end, { silent = true })
 
@@ -74,6 +76,8 @@ return {
 		vim.keymap.set({ "i", "s" }, "<S-Tab>", function()
 			if luasnip.jumpable(-1) then
 				luasnip.jump(-1)
+			else
+				vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<S-Tab>", true, false, true), "n", true)
 			end
 		end, { silent = true })
 	end,
