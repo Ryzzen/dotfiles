@@ -12,6 +12,7 @@ return {
 			-- install jsregexp (optional!).
 			build = "make install_jsregexp",
 		},
+		"paopaol/cmp-doxygen",
 		"saadparwaiz1/cmp_luasnip", -- for autocompletion
 		"onsails/lspkind.nvim", -- vs-code like pictograms
 	},
@@ -43,6 +44,7 @@ return {
 				{ name = "luasnip" }, -- snippets
 				{ name = "nvim_lsp" },
 				{ name = "nvim_lsp_signature_help" },
+				{ name = "doxygen" },
 				{ name = "buffer" }, -- text within current buffer
 				{ name = "path" }, -- file system paths
 			}),
