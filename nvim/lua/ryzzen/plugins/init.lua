@@ -3,5 +3,5 @@ return {
 	"rcarriga/nvim-notify",
 	"https://github.com/tpope/vim-commentary",
 	"https://github.com/junegunn/fzf",
-	"nvim-treesitter/nvim-treesitter-textobjects",
+	-- "nvim-treesitter/nvim-treesitter-textobjects",
 }
