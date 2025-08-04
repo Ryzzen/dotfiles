@@ -131,7 +131,7 @@ return {
 		}
 		vim.lsp.enable("emmet_ls")
 
-		vim.lsp.config["lua_ls"] = {
+		vim.lsp.config["luals"] = {
 			cmd = { "lua-language-server" },
 			filetypes = { "lua" },
 			capabilities = capabilities,

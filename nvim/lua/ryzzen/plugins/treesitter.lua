@@ -1,5 +1,7 @@
 return {
 	"nvim-treesitter/nvim-treesitter",
+	branch = "master",
+	lazy = "false",
 	build = ":TSUpdate",
 	event = { "BufReadPre", "BufNewFile" },
 	dependencies = {
@@ -7,7 +9,26 @@ return {
 	},
 	config = function()
 		require("nvim-treesitter.configs").setup({
-			ensure_installed = { "c", "cpp", "lua", "vim", "vimdoc", "query", "nix", "python" },
+			ensure_installed = {
+				"c",
+				"cpp",
+				"lua",
+				"vim",
+				"vimdoc",
+				"query",
+				"nix",
+				"python",
+				"bash",
+				"ruby",
+				"rust",
+				"objdump",
+				"mermaid",
+				"llvm",
+				"kconfig",
+				"json",
+				"java",
+			},
+			auto_install = true,
 
 			highlight = {
 				enable = true,
