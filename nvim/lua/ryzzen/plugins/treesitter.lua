@@ -27,6 +27,9 @@ return {
 				"kconfig",
 				"json",
 				"java",
+				"markdown",
+				"markdown_inline",
+				"regex",
 			},
 			auto_install = true,
 
