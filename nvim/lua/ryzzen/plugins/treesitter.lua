@@ -3,7 +3,7 @@ return {
 	branch = "master",
 	lazy = "false",
 	build = ":TSUpdate",
-	event = { "BufReadPre", "BufNewFile" },
+	event = { "BufReadPost", "BufNewFile" },
 	dependencies = {
 		"nvim-treesitter/nvim-treesitter-textobjects",
 	},
