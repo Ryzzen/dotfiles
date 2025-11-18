@@ -3,6 +3,7 @@ return {
 	branch = "master",
 	lazy = false,
 	build = ":TSUpdate",
+	event = { "BufReadPre", "BufNewFile" },
 	dependencies = {
 		"nvim-treesitter/nvim-treesitter-textobjects",
 	},
@@ -90,22 +91,6 @@ return {
 				},
 			},
 		})
-
-		local function attach_current_buffer()
-			local bufnr = vim.api.nvim_get_current_buf()
-			if vim.api.nvim_buf_is_loaded(bufnr) then
-				pcall(vim.treesitter.start, bufnr)
-			end
-		end
-
-		-- Attach to first buffer on startup
-		attach_current_buffer()
-
-		-- Attach automatically to future buffers
-		vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile", "BufWinEnter" }, {
-			callback = function(args)
-				pcall(vim.treesitter.start, args.buf)
-			end,
-		})
+		pcall(vim.treesitter.start, 0)
 	end,
 }
