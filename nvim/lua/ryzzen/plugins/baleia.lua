@@ -11,5 +11,12 @@ return {
 
 		-- Command to show logs
 		vim.api.nvim_create_user_command("BaleiaLogs", vim.g.baleia.logger.show, { bang = true })
+
+		vim.api.nvim_create_autocmd({ "BufWinEnter" }, {
+			pattern = "*.log",
+			callback = function()
+				vim.g.baleia.automatically(vim.api.nvim_get_current_buf())
+			end,
+		})
 	end,
 }
