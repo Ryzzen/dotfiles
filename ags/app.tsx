@@ -3,7 +3,7 @@ import { Astal } from "ags/gtk4"
 import { readFile } from "ags/file"
 import GLib from "gi://GLib"
 import style from "./style.scss"
-import Bar from "./widgets/Bar"
+import Bars from "./widgets/Bar"
 import SidePanel from "./widgets/SidePanel"
 import HwPopup from "./widgets/HwPopup"
 import CalendarPopup from "./widgets/CalendarPopup"
@@ -46,7 +46,7 @@ app.start({
     instanceName: "ryzzen-shell",
     css: css,
     main() {
-        Bar(0)
+        Bars()
         SidePanel(0)
         HwPopup(0)
         CalendarPopup(0)

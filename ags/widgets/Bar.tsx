@@ -1,16 +1,18 @@
-import { Astal, Gtk } from "ags/gtk4"
+import { Astal, Gtk, Gdk } from "ags/gtk4"
 import { createBinding, createComputed, For } from "ags"
 import { createPoll } from "ags/time"
 import { execAsync } from "ags/process"
 import { readFile } from "ags/file"
 import app from "ags/gtk4/app"
 import GLib from "gi://GLib"
+import Graphene from "gi://Graphene"
 import Hyprland from "gi://AstalHyprland"
 import Wp from "gi://AstalWp"
 import Network from "gi://AstalNetwork"
 import Battery from "gi://AstalBattery"
 import Bluetooth from "gi://AstalBluetooth"
 import Tray from "gi://AstalTray"
+import cairo from "cairo"
 
 // Nerd Font icon constants (CaskaydiaCove Nerd Font codepoints)
 const ICON = {
@@ -46,21 +48,268 @@ const ICON = {
     POWER:      "\u{f011}",  // nf-fa-power_off
 }
 
-// Read surface color from pywal for Cairo drawing (+20 lighten to match CSS surface)
-function walSurface(): [number, number, number] {
-    const home = GLib.get_home_dir()
-    const line = readFile(`${home}/.cache/wal/colors`).trim().split("\n")[0]
-    const r = Math.min(255, parseInt(line.slice(1, 3), 16) + 20) / 255
-    const g = Math.min(255, parseInt(line.slice(3, 5), 16) + 20) / 255
-    const b = Math.min(255, parseInt(line.slice(5, 7), 16) + 20) / 255
-    return [r, g, b]
+// ── Pywal color helpers ────────────────────────────────────
+
+function parseHex(hex: string): [number, number, number] {
+    return [
+        parseInt(hex.slice(1, 3), 16) / 255,
+        parseInt(hex.slice(3, 5), 16) / 255,
+        parseInt(hex.slice(5, 7), 16) / 255,
+    ]
 }
+
+function walColorLines(): string[] {
+    const home = GLib.get_home_dir()
+    return readFile(`${home}/.cache/wal/colors`).trim().split("\n")
+}
+
+function walSurface(): [number, number, number] {
+    const [r, g, b] = parseHex(walColorLines()[0])
+    return [
+        Math.min(1, r + 20 / 255),
+        Math.min(1, g + 20 / 255),
+        Math.min(1, b + 20 / 255),
+    ]
+}
+
+function walPrimary(): [number, number, number] {
+    return parseHex(walColorLines()[4])
+}
+
+function walAccent2(): [number, number, number] {
+    return parseHex(walColorLines()[5])
+}
+
+// ── Animated border ────────────────────────────────────────
+
+const ANIM_PERIOD = 4.0   // seconds for full ping-pong cycle
+const BORDER_PX = 2
+const PULSE_W = 0.07      // pulse glow radius (fraction of path length)
+const TRAIL_LEN = 0.18    // trail length behind pulse
+const TRAIL_ALPHA = 0.18  // max trail brightness
+const ANGLE_W = 48        // must match RoundedAngle contentWidth
+const CURVE_STEPS = 64
+const LINE_STEPS = 64     // subdivide straight sections too
+
+// Per-monitor section widget refs for the border overlay (keyed by connector name)
+type BarRefs = { left: Gtk.Widget | null; center: Gtk.Widget | null; right: Gtk.Widget | null }
+const barRefs = new Map<string, BarRefs>()
+
+function easeInOutSine(t: number): number {
+    return -(Math.cos(Math.PI * t) - 1) / 2
+}
+
+function gaussFalloff(dist: number, radius: number): number {
+    if (dist > radius) return 0
+    const x = dist / radius
+    return Math.exp(-x * x * 5)
+}
+
+// Ping-pong: 0→0.5→0 smoothly (no discontinuity)
+function getAnimPos(): number {
+    const raw = ((GLib.get_monotonic_time() / 1_000_000) % ANIM_PERIOD) / ANIM_PERIOD
+    // 0→1→0 triangle wave
+    const tri = raw < 0.5 ? raw * 2 : 2 - raw * 2
+    return easeInOutSine(tri) * 0.5  // 0→0.5→0
+}
+
+function bezierVal(t: number, p0: number, p1: number, p2: number, p3: number): number {
+    const mt = 1 - t
+    return mt * mt * mt * p0 + 3 * mt * mt * t * p1 + 3 * mt * t * t * p2 + t * t * t * p3
+}
+
+type Pt = { x: number; y: number }
+
+function addCurve(pts: Pt[], x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number) {
+    for (let i = 1; i <= CURVE_STEPS; i++) {
+        const t = i / CURVE_STEPS
+        pts.push({ x: bezierVal(t, x0, x1, x2, x3), y: bezierVal(t, y0, y1, y2, y3) })
+    }
+}
+
+// Subdivide a straight line into many small segments for even rendering
+function addLine(pts: Pt[], x0: number, y0: number, x1: number, y1: number) {
+    for (let i = 1; i <= LINE_STEPS; i++) {
+        const t = i / LINE_STEPS
+        pts.push({ x: x0 + (x1 - x0) * t, y: y0 + (y1 - y0) * t })
+    }
+}
+
+function BorderOverlay({ connector }: { connector: string }) {
+    return (
+        <drawingarea
+            hexpand
+            vexpand
+            canTarget={false}
+            $={(self: Gtk.DrawingArea) => {
+                self.set_draw_func((_da, cr, totalW, totalH) => {
+                    if (!self.get_mapped()) return
+                    const refs = barRefs.get(connector)
+                    if (!refs?.left || !refs?.center || !refs?.right || totalW <= 0) return
+                    if (!refs.left.get_mapped() || !refs.center.get_mapped() || !refs.right.get_mapped()) return
+
+                    const origin = new Graphene.Point({ x: 0, y: 0 })
+                    const getX = (w: Gtk.Widget): number | null => {
+                        const [ok, pt] = w.compute_point(self, origin)
+                        return ok ? pt.x : null
+                    }
+
+                    const lx = getX(refs.left)
+                    const cx = getX(refs.center)
+                    const rx = getX(refs.right)
+                    if (lx === null || cx === null || rx === null) return
+
+                    const lw = refs.left.get_width()
+                    const cw = refs.center.get_width()
+                    const rw = refs.right.get_width()
+                    const aw = ANGLE_W
+                    // Pull bottom edge up by border width so it sits on the box edge
+                    const bot = totalH - BORDER_PX / 2
+
+                    // Build three island contours with evenly subdivided segments
+                    // Island 1: bar-left bottom → topright curve up
+                    const i1: Pt[] = [{ x: lx, y: bot }]
+                    addLine(i1, lx, bot, lx + lw, bot)
+                    addCurve(i1, lx + lw, bot, lx + lw + aw / 2, bot, lx + lw + aw / 2, 0, lx + lw + aw, 0)
+
+                    // Island 2: topleft curve down → workspaces bottom → topright curve up
+                    const i2: Pt[] = [{ x: cx - aw, y: 0 }]
+                    addCurve(i2, cx - aw, 0, cx - aw / 2, 0, cx - aw / 2, bot, cx, bot)
+                    addLine(i2, cx, bot, cx + cw, bot)
+                    addCurve(i2, cx + cw, bot, cx + cw + aw / 2, bot, cx + cw + aw / 2, 0, cx + cw + aw, 0)
+
+                    // Island 3: topleft curve down → bar-right bottom
+                    const i3: Pt[] = [{ x: rx - aw, y: 0 }]
+                    addCurve(i3, rx - aw, 0, rx - aw / 2, 0, rx - aw / 2, bot, rx, bot)
+                    addLine(i3, rx, bot, rx + rw, bot)
+
+                    // Compute cumulative arc-length for each island
+                    function arcLengths(pts: Pt[]): number[] {
+                        const lens = [0]
+                        for (let i = 1; i < pts.length; i++) {
+                            const dx = pts[i].x - pts[i - 1].x
+                            const dy = pts[i].y - pts[i - 1].y
+                            lens.push(lens[i - 1] + Math.sqrt(dx * dx + dy * dy))
+                        }
+                        return lens
+                    }
+
+                    // Build a single unified path across all islands for consistent parameterization
+                    const allIslands = [i1, i2, i3]
+                    const allLens = allIslands.map(arcLengths)
+                    const islandTotalLens = allLens.map(l => l[l.length - 1])
+                    const grandTotal = islandTotalLens.reduce((a, b) => a + b, 0)
+
+                    // Cumulative offset per island in the grand path
+                    const islandOffsets = [0, islandTotalLens[0], islandTotalLens[0] + islandTotalLens[1]]
+
+                    // Animation: ping-pong pulses (no discontinuity)
+                    const animPos = getAnimPos()  // 0→0.5→0 smoothly
+                    const [pr, pg, pb] = walPrimary()
+                    const [ar, ag, ab] = walAccent2()
+
+                    const leftPos = animPos          // 0 → 0.5 → 0
+                    const rightPos = 1 - animPos     // 1 → 0.5 → 1
+
+                    // Meeting flash when pulses converge at center
+                    const meetDist = rightPos - leftPos
+                    const meetGlow = meetDist < 0.12 ? (1 - meetDist / 0.12) * 0.35 : 0
+
+                    cr.setLineWidth(BORDER_PX)
+                    cr.setLineCap(1)  // ROUND
+                    cr.setLineJoin(1) // ROUND
+
+                    // Helper: compute color at a given path fraction
+                    function colorAt(frac: number): [number, number, number, number] {
+                        let alpha = 0, rr = 0, gg = 0, bb = 0
+
+                        const lDist = Math.abs(frac - leftPos)
+                        const lGlow = gaussFalloff(lDist, PULSE_W) * 0.9
+                        if (lGlow > alpha) { alpha = lGlow; rr = pr; gg = pg; bb = pb }
+
+                        if (frac < leftPos && frac > leftPos - TRAIL_LEN) {
+                            const tf = (leftPos - frac) / TRAIL_LEN
+                            const ta = TRAIL_ALPHA * (1 - tf * tf)
+                            if (ta > alpha) { alpha = ta; rr = pr; gg = pg; bb = pb }
+                        }
+
+                        const rDist = Math.abs(frac - rightPos)
+                        const rGlow = gaussFalloff(rDist, PULSE_W) * 0.9
+                        if (rGlow > alpha) { alpha = rGlow; rr = ar; gg = ag; bb = ab }
+
+                        if (frac > rightPos && frac < rightPos + TRAIL_LEN) {
+                            const tf = (frac - rightPos) / TRAIL_LEN
+                            const ta = TRAIL_ALPHA * (1 - tf * tf)
+                            if (ta > alpha) { alpha = ta; rr = ar; gg = ag; bb = ab }
+                        }
+
+                        if (meetGlow > 0) {
+                            const centerDist = Math.abs(frac - 0.5)
+                            const cg = meetGlow * gaussFalloff(centerDist, 0.3)
+                            if (cg > 0) {
+                                const mr = pr * 0.5 + ar * 0.5
+                                const mg = pg * 0.5 + ag * 0.5
+                                const mb = pb * 0.5 + ab * 0.5
+                                alpha = Math.min(1, alpha + cg)
+                                rr = rr * (1 - cg) + mr * cg
+                                gg = gg * (1 - cg) + mg * cg
+                                bb = bb * (1 - cg) + mb * cg
+                            }
+                        }
+
+                        return [rr, gg, bb, alpha]
+                    }
+
+                    // Draw each island as one continuous path with a gradient
+                    for (let isle = 0; isle < 3; isle++) {
+                        const pts = allIslands[isle]
+                        const lens = allLens[isle]
+                        const offset = islandOffsets[isle]
+                        const totalLen = islandTotalLens[isle]
+
+                        if (pts.length < 2 || totalLen <= 0) continue
+
+                        const x0 = pts[0].x
+                        const x1 = pts[pts.length - 1].x
+                        if (Math.abs(x1 - x0) < 1) continue
+
+                        // Build gradient with color stops at each point's x-position
+                        const grad = new cairo.LinearGradient(x0, 0, x1, 0)
+                        for (let j = 0; j < pts.length; j++) {
+                            const frac = (offset + lens[j]) / grandTotal
+                            const [r, g, b, a] = colorAt(frac)
+                            const stop = (pts[j].x - x0) / (x1 - x0)
+                            grad.addColorStopRGBA(Math.max(0, Math.min(1, stop)), r, g, b, a)
+                        }
+
+                        // Build continuous path and stroke once
+                        cr.newPath()
+                        cr.moveTo(pts[0].x, pts[0].y)
+                        for (let j = 1; j < pts.length; j++) {
+                            cr.lineTo(pts[j].x, pts[j].y)
+                        }
+                        cr.setSource(grad)
+                        cr.stroke()
+                    }
+                })
+
+                self.add_tick_callback(() => {
+                    if (!self.get_mapped()) return true
+                    self.queue_draw()
+                    return true
+                })
+            }}
+        />
+    )
+}
+
+// ── RoundedAngle ───────────────────────────────────────────
 
 function RoundedAngle({ place }: { place: "topleft" | "topright" }) {
     return (
         <drawingarea
             vexpand
-            contentWidth={48}
+            contentWidth={ANGLE_W}
             $={(self: Gtk.DrawingArea) => {
                 self.set_draw_func((_area, cr, width, height) => {
                     const [r, g, b] = walSurface()
@@ -132,13 +381,13 @@ function QuickLinks() {
 
 // ── Workspaces ──────────────────────────────────────────────
 
-function Workspaces() {
+function Workspaces({ setup }: { setup?: (self: Gtk.Widget) => void }) {
     const hypr = Hyprland.get_default()
     const workspaces = createBinding(hypr, "workspaces")
     const focusedWs = createBinding(hypr, "focusedWorkspace")
 
     return (
-        <box class="ws-container" spacing={0}>
+        <box class="ws-container" spacing={0} $={setup}>
             <For each={workspaces}>
                 {(ws) => {
                     const isFocused = focusedWs((fw) => fw?.id === ws.id)
@@ -401,54 +650,74 @@ function PowerButton() {
 
 // ── Bar ─────────────────────────────────────────────────────
 
-export default function Bar(monitor: number) {
+function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
     const { TOP, LEFT, RIGHT } = Astal.WindowAnchor
+    const connector = gdkmonitor.get_connector() || "unknown"
+    const refs: BarRefs = { left: null, center: null, right: null }
+    barRefs.set(connector, refs)
 
     return (
         <window
             visible
-            name="bar"
+            name={`bar-${connector}`}
             namespace="bar"
             class="Bar"
-            monitor={monitor}
+            gdkmonitor={gdkmonitor}
             exclusivity={Astal.Exclusivity.EXCLUSIVE}
             anchor={TOP | LEFT | RIGHT}
             application={app}
         >
-            <centerbox class="bar-inner">
-                {/* ── Left: appmenu + quicklinks + title + angle ── */}
-                <box $type="start">
-                    <box class="bar-left" spacing={4}>
-                        <AppMenuButton />
-                        <QuickLinks />
-                        <SysTray />
-                        <FocusedTitle />
+            <overlay>
+                <centerbox class="bar-inner">
+                    {/* ── Left: appmenu + quicklinks + tray + title + angle ── */}
+                    <box $type="start">
+                        <box class="bar-left" $={(s: Gtk.Widget) => { refs.left = s }} spacing={4}>
+                            <AppMenuButton />
+                            <QuickLinks />
+                            <SysTray />
+                            <FocusedTitle />
+                        </box>
+                        <RoundedAngle place="topright" />
                     </box>
-                    <RoundedAngle place="topright" />
-                </box>
 
-                {/* ── Center: workspaces ── */}
-                <box $type="center">
-                    <RoundedAngle place="topleft" />
-                    <Workspaces />
-                    <RoundedAngle place="topright" />
-                </box>
-
-                {/* ── Right: angle + indicators + clock ── */}
-                <box $type="end">
-                    <box hexpand />
-                    <RoundedAngle place="topleft" />
-                    <box class="bar-right" spacing={4}>
-                        <HardwareStats />
-                        <AudioIndicator />
-                        <BluetoothIndicator />
-                        <NetworkIndicator />
-                        <BatteryIndicator />
-                        <Clock />
-                        <PowerButton />
+                    {/* ── Center: workspaces ── */}
+                    <box $type="center">
+                        <RoundedAngle place="topleft" />
+                        <Workspaces setup={(s: Gtk.Widget) => { refs.center = s }} />
+                        <RoundedAngle place="topright" />
                     </box>
-                </box>
-            </centerbox>
+
+                    {/* ── Right: angle + indicators + clock ── */}
+                    <box $type="end">
+                        <box hexpand />
+                        <RoundedAngle place="topleft" />
+                        <box class="bar-right" $={(s: Gtk.Widget) => { refs.right = s }} spacing={4}>
+                            <HardwareStats />
+                            <AudioIndicator />
+                            <BluetoothIndicator />
+                            <NetworkIndicator />
+                            <BatteryIndicator />
+                            <Clock />
+                            <PowerButton />
+                        </box>
+                    </box>
+                </centerbox>
+                <BorderOverlay connector={connector} $type="overlay" />
+            </overlay>
         </window>
+    )
+}
+
+export default function Bars() {
+    const monitors = createBinding(app, "monitors")
+    return (
+        <For each={monitors} cleanup={(win) => {
+            const w = win as Gtk.Window
+            const name = w.name
+            if (name) barRefs.delete(name.replace("bar-", ""))
+            w.destroy()
+        }}>
+            {(gdkmonitor) => <Bar gdkmonitor={gdkmonitor as Gdk.Monitor} />}
+        </For>
     )
 }
