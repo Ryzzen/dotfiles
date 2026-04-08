@@ -66,9 +66,10 @@ app.start({
             if (win) win.visible = !win.visible
             response("ok")
         } else if (cmd === "reload-css") {
+            const newCss = walColors() + "\n" + style
             app.reset_css()
-            app.apply_css(walColors() + "\n" + style, false)
-            response("ok")
+            app.apply_css(newCss)
+            response("reloaded")
         } else {
             response(`unknown command: ${cmd}`)
         }
