@@ -1,0 +1,176 @@
+@import '../../../ryzzen/.cache/wal/colors-waybar.css';
+
+@define-color backgroundlight @color3;
+@define-color backgrounddark @background;
+@define-color bordercolor @color3;
+@define-color textcolor1 #FFFFFF;
+@define-color textcolor2 #FFFFFF;
+@define-color iconcolor #FFFFFF;
+
+* {
+    font-family: "JetBrainsMono Nerd Font", "Fira Code", monospace;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 0.06em;
+    color: @textcolor1;
+}
+
+/* ── Bar window ───────────────────────────────────────────── */
+
+.bar {
+    background: transparent;
+}
+
+/* ── Generic module panels ────────────────────────────────── */
+
+.clock,
+.battery,
+.network,
+.audio,
+.bluetooth,
+.hardware,
+.cpu,
+.memory,
+.disk,
+.appmenu,
+.window-title {
+    background: rgba(0, 0, 0, 0.55);
+    padding: 0 12px;
+    margin: 4px 3px;
+    border-left: 3px solid @bordercolor;
+    clip-path: polygon(
+        10px 0%, calc(100% - 10px) 0%,
+        100% 50%,
+        calc(100% - 10px) 100%, 10px 100%,
+        0% 50%
+    );
+}
+
+/* ── Workspaces ───────────────────────────────────────────── */
+
+.workspaces {
+    margin: 4px 6px;
+}
+
+.workspace {
+    background: rgba(0, 0, 0, 0.45);
+    padding: 2px 12px;
+    margin: 0 2px;
+    border: 1px solid transparent;
+    border-left: 3px solid transparent;
+    opacity: 0.4;
+    transition: all 150ms ease;
+    clip-path: polygon(
+        8px 0%, calc(100% - 8px) 0%,
+        100% 50%,
+        calc(100% - 8px) 100%, 8px 100%,
+        0% 50%
+    );
+}
+
+.workspace.active {
+    background: rgba(0, 0, 0, 0.75);
+    border-left: 3px solid @bordercolor;
+    opacity: 1;
+}
+
+.workspace:hover {
+    background: rgba(0, 0, 0, 0.6);
+    border-left: 3px solid @bordercolor;
+    opacity: 0.8;
+}
+
+/* ── Clock ────────────────────────────────────────────────── */
+
+.clock {
+    border-left: 4px solid @bordercolor;
+    border-right: 4px solid @bordercolor;
+    padding: 0 18px;
+    margin: 4px 6px;
+    background: rgba(0, 0, 0, 0.7);
+}
+
+/* ── App menu ─────────────────────────────────────────────── */
+
+.appmenu {
+    border-left: 4px solid @bordercolor;
+    letter-spacing: 0.12em;
+}
+
+/* ── Power ────────────────────────────────────────────────── */
+
+.power {
+    background: transparent;
+    padding: 0 10px;
+    margin: 4px 3px;
+    font-size: 16px;
+    opacity: 0.6;
+    border: none;
+    transition: opacity 200ms ease;
+}
+
+.power:hover {
+    opacity: 1;
+    color: #f53c3c;
+}
+
+/* ── Battery states ───────────────────────────────────────── */
+
+.battery.warning {
+    border-left-color: #ff9a3c;
+    color: #ff9a3c;
+}
+
+.battery.critical {
+    border-left-color: #f53c3c;
+    color: #f53c3c;
+    background: rgba(245, 60, 60, 0.18);
+    animation: hud-blink 500ms step-start infinite;
+}
+
+/* ── Network states ───────────────────────────────────────── */
+
+.network.disconnected {
+    border-left-color: #f53c3c;
+    color: #f53c3c;
+    background: rgba(245, 60, 60, 0.18);
+}
+
+/* ── Bluetooth ────────────────────────────────────────────── */
+
+.bluetooth.off {
+    opacity: 0.3;
+}
+
+/* ── Hardware group ───────────────────────────────────────── */
+
+.hardware {
+    padding: 0 6px;
+}
+
+.cpu, .memory, .disk {
+    background: transparent;
+    border: none;
+    clip-path: none;
+    padding: 0 6px;
+    margin: 0;
+}
+
+/* ── Animations ───────────────────────────────────────────── */
+
+@keyframes hud-blink {
+    50% { opacity: 0.2; }
+}
+
+/* ── Tooltip ──────────────────────────────────────────────── */
+
+tooltip {
+    background: @backgrounddark;
+    border: 1px solid @bordercolor;
+    padding: 8px 14px;
+}
+
+tooltip label {
+    color: @textcolor2;
+    font-size: 11px;
+}
