@@ -65,6 +65,9 @@ app.start({
             const win = app.get_window("calendar-popup")
             if (win) win.visible = !win.visible
             response("ok")
+        } else if (cmd === "reload-css") {
+            app.apply_css(walColors() + "\n" + style, true)
+            response("ok")
         } else {
             response(`unknown command: ${cmd}`)
         }
