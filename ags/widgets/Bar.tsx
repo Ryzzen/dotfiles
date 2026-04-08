@@ -55,7 +55,6 @@ function walSurface(): [number, number, number] {
     const b = Math.min(255, parseInt(line.slice(5, 7), 16) + 20) / 255
     return [r, g, b]
 }
-const [S_R, S_G, S_B] = walSurface()
 
 function RoundedAngle({ place }: { place: "topleft" | "topright" }) {
     return (
@@ -64,7 +63,8 @@ function RoundedAngle({ place }: { place: "topleft" | "topright" }) {
             contentWidth={48}
             $={(self: Gtk.DrawingArea) => {
                 self.set_draw_func((_area, cr, width, height) => {
-                    cr.setSourceRGBA(S_R, S_G, S_B, 1)
+                    const [r, g, b] = walSurface()
+                    cr.setSourceRGBA(r, g, b, 1)
 
                     if (place === "topright") {
                         cr.moveTo(width, 0)
