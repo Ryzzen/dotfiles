@@ -1,0 +1,641 @@
+// ── Colors are defined at runtime via @define-color from pywal ──
+// Semantic names: surface, surface_container, surface_container_low,
+// surface_container_high, surface_variant, surface_bright, primary,
+// on_primary, primary_container, on_surface, on_surface_variant,
+// outline, outline_variant, error, tertiary
+
+// ── Global ──────────────────────────────────────────────────
+
+* {
+    font-family: "CaskaydiaCove Nerd Font";
+    font-size: 15px;
+    color: #{"@on_surface"};
+}
+
+button {
+    background: none;
+    border: none;
+    box-shadow: none;
+    min-height: 0;
+    min-width: 0;
+    padding: 0;
+}
+
+// ── Bar ─────────────────────────────────────────────────────
+
+window.Bar {
+    background: transparent;
+}
+
+.bar-inner {
+    background: transparent;
+}
+
+// ── Bar Sections ─────────────────────────────────────────────
+
+.bar-left {
+    background-color: #{"@surface"};
+}
+
+.bar-right {
+    background-color: #{"@surface"};
+    padding: 0 4px;
+}
+
+// ── App Menu ─────────────────────────────────────────────────
+
+.appmenu-btn {
+    background: #{"@surface_container_high"};
+    border-radius: 1rem;
+    padding: 2px 14px;
+    margin: 4px 4px;
+    color: #{"@on_surface"};
+    font-size: 0.7rem;
+
+    &:hover {
+        background: #{"@surface_bright"};
+    }
+}
+
+// ── Quick Links ──────────────────────────────────────────────
+
+.quicklinks {
+    margin: 0 4px;
+}
+
+.quicklink-btn {
+    padding: 0 6px;
+    font-size: 0.8rem;
+    color: #{"@on_surface_variant"};
+    transition: all 200ms;
+
+    &:hover {
+        color: #{"@primary"};
+    }
+}
+
+// ── Workspaces ───────────────────────────────────────────────
+
+.ws-container {
+    background-color: #{"@surface"};
+    padding: 4px;
+}
+
+.ws-button {
+    transition: all 200ms;
+
+    &.active .ws-button-label {
+        background-color: #{"@primary"};
+        color: #{"@on_primary"};
+        border-radius: 1rem;
+    }
+
+    &:hover:not(.active) .ws-button-label {
+        background-color: #{"@surface_container_high"};
+        border-radius: 1rem;
+    }
+
+    .ws-button-label {
+        min-width: 2rem;
+        padding: 2px 0;
+        transition: all 200ms;
+    }
+}
+
+// ── Focused Title ────────────────────────────────────────────
+
+.title-box {
+    min-width: 10rem;
+    background-color: #{"@surface"};
+    padding-left: 8px;
+
+    .title-class {
+        font-size: 0.6rem;
+        color: #{"@primary"};
+    }
+
+    .title-title {
+        font-size: 0.7rem;
+    }
+}
+
+// ── System Tray ─────────────────────────────────────────────
+
+.systray-container {
+    background-color: #{"@surface"};
+}
+
+.systray-item {
+    font-size: 1.3rem;
+    padding: 0 2px;
+    min-width: 24px;
+    min-height: 24px;
+
+    button {
+        min-width: 24px;
+        min-height: 24px;
+    }
+}
+
+popover {
+    background: #{"@surface_container_high"};
+    border: 1px solid #{"@outline_variant"};
+    border-radius: 0.5rem;
+    padding: 4px;
+
+    contents {
+        background: transparent;
+    }
+
+    modelbutton, button {
+        color: #{"@on_surface"};
+        padding: 4px 8px;
+
+        &:hover {
+            background: #{"@surface_bright"};
+        }
+    }
+
+    label {
+        color: #{"@on_surface"};
+    }
+}
+
+// ── Bar Indicators ───────────────────────────────────────────
+
+.bar-indicator {
+    padding: 0 6px;
+    font-size: 0.7rem;
+    color: #{"@on_surface_variant"};
+
+    &:hover {
+        color: #{"@on_surface"};
+    }
+
+    &.muted {
+        color: #{"@outline"};
+    }
+
+    &.bt-on {
+        color: #{"@primary"};
+    }
+
+    &.bt-off {
+        color: #{"@outline"};
+    }
+
+    &.battery {
+        &.warning { color: #{"@tertiary"}; }
+        &.critical { color: #{"@error"}; }
+    }
+}
+
+// ── Hardware Stats ──────────────────────────────────────────
+
+.hw-stats {
+    font-size: 0.7rem;
+    color: #{"@on_surface_variant"};
+}
+
+// ── Power Button ────────────────────────────────────────────
+
+.power-btn {
+    padding: 0 6px;
+    color: #{"@outline"};
+    transition: all 200ms;
+
+    &:hover {
+        color: #{"@error"};
+    }
+}
+
+// ── Clock ───────────────────────────────────────────────────
+
+.clock-container {
+    background-color: #{"@surface"};
+    padding-right: 8px;
+
+    .clock-date {
+        font-size: 0.6rem;
+        color: #{"@primary"};
+    }
+
+    .clock-time {
+        font-size: 0.7rem;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+//   SIDE PANEL
+// ═══════════════════════════════════════════════════════════
+
+window.SidePanel {
+    background: transparent;
+}
+
+.sp-scroll {
+    min-width: 340px;
+}
+
+.sp-content {
+    background: #{"@surface_container"};
+    border-radius: 1rem;
+    padding: 16px;
+    border: 1px solid #{"@outline_variant"};
+}
+
+.sp-header {
+    margin-bottom: 4px;
+}
+
+.sp-time {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.sp-uptime {
+    font-size: 12px;
+    color: #{"@outline"};
+}
+
+.sp-header-btn {
+    background: #{"@surface_container_high"};
+    border-radius: 50%;
+    min-width: 32px;
+    min-height: 32px;
+    padding: 0;
+    color: #{"@on_surface_variant"};
+
+    &:hover {
+        background: #{"@surface_bright"};
+        color: #{"@on_surface"};
+    }
+}
+
+// ── Quick Toggles ───────────────────────────────────────────
+
+.quick-toggles {
+    margin: 4px 0;
+}
+
+.toggle-btn {
+    background: #{"@surface_container_high"};
+    border-radius: 50%;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 0;
+    color: #{"@on_surface_variant"};
+    font-size: 16px;
+    transition: all 200ms;
+
+    &.active {
+        background: #{"@primary_container"};
+        color: #{"@primary"};
+    }
+
+    &:hover {
+        background: #{"@surface_bright"};
+    }
+}
+
+// ── Section Styling ─────────────────────────────────────────
+
+.section-header {
+    margin-bottom: 6px;
+}
+
+.section-icon {
+    font-size: 14px;
+    color: #{"@primary"};
+}
+
+.section-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: #{"@on_surface_variant"};
+    margin-bottom: 4px;
+}
+
+.section-settings {
+    color: #{"@outline"};
+    padding: 0;
+    min-width: 24px;
+
+    &:hover {
+        color: #{"@on_surface"};
+    }
+}
+
+// ── Audio Section ───────────────────────────────────────────
+
+.audio-section {
+    background: #{"@surface_container"};
+    border-radius: 0.5rem;
+    padding: 12px;
+}
+
+.mute-btn {
+    background: #{"@surface_container_high"};
+    border-radius: 50%;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 0;
+    color: #{"@on_surface_variant"};
+    font-size: 14px;
+
+    &:hover {
+        background: #{"@surface_bright"};
+    }
+}
+
+.volume-label-row {
+    margin-bottom: 2px;
+}
+
+.volume-label {
+    font-size: 12px;
+    color: #{"@on_surface_variant"};
+}
+
+.volume-pct {
+    font-size: 12px;
+    color: #{"@outline"};
+}
+
+.volume-slider {
+    min-height: 1rem;
+    min-width: 1rem;
+    padding: 0 1rem;
+
+    slider {
+        min-height: 1rem;
+        min-width: 1rem;
+        margin: -0.5rem;
+        background-color: #{"@surface_variant"};
+        box-shadow: 0 1px 2px 1px rgba(0, 0, 0, 0.25);
+        border-radius: 100%;
+    }
+
+    highlight {
+        border-radius: 1rem;
+        background-color: #{"@primary"};
+    }
+
+    trough {
+        border-radius: 1rem;
+        background: #{"@surface_container_high"};
+    }
+}
+
+// ── Sink / Source Selector ──────────────────────────────────
+
+.sink-selector,
+.source-selector {
+    background: #{"@surface_container"};
+    border-radius: 0.5rem;
+    padding: 12px;
+}
+
+.sink-item,
+.source-item {
+    border-radius: 0.5rem;
+    padding: 6px 8px;
+    color: #{"@on_surface_variant"};
+
+    &.active {
+        color: #{"@primary"};
+    }
+
+    &:hover {
+        background: #{"@surface_container_high"};
+    }
+}
+
+.sink-check,
+.source-check {
+    margin-right: 8px;
+    font-size: 12px;
+    min-width: 16px;
+}
+
+.sink-name,
+.source-name {
+    font-size: 12px;
+}
+
+// ── App Mixer ───────────────────────────────────────────────
+
+.app-mixer {
+    background: #{"@surface_container"};
+    border-radius: 0.5rem;
+    padding: 12px;
+}
+
+.mixer-name {
+    font-size: 12px;
+    color: #{"@on_surface_variant"};
+    min-width: 80px;
+}
+
+.mixer-slider {
+    min-height: 1rem;
+    min-width: 1rem;
+    padding: 0 1rem;
+
+    slider {
+        min-height: 0.8rem;
+        min-width: 0.8rem;
+        margin: -0.4rem;
+        background-color: #{"@surface_variant"};
+        box-shadow: 0 1px 2px 1px rgba(0, 0, 0, 0.25);
+        border-radius: 100%;
+    }
+
+    highlight {
+        border-radius: 1rem;
+        background-color: #{"@primary"};
+    }
+
+    trough {
+        border-radius: 1rem;
+        background: #{"@surface_container_high"};
+    }
+}
+
+.mixer-pct {
+    font-size: 11px;
+    color: #{"@outline"};
+    min-width: 32px;
+}
+
+// ═══════════════════════════════════════════════════════════
+//   HARDWARE POPUP
+// ═══════════════════════════════════════════════════════════
+
+window.HwPopup {
+    background: transparent;
+}
+
+.hw-popup-content {
+    background: #{"@surface_container"};
+    border-radius: 1rem;
+    padding: 16px;
+    border: 1px solid #{"@outline_variant"};
+    min-width: 300px;
+}
+
+.hw-popup-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #{"@on_surface"};
+    margin-bottom: 4px;
+}
+
+.hw-row {
+    padding: 4px 0;
+}
+
+.hw-icon {
+    font-size: 18px;
+    color: #{"@primary"};
+    min-width: 24px;
+}
+
+.hw-label {
+    font-size: 12px;
+    font-weight: bold;
+    color: #{"@on_surface_variant"};
+}
+
+.hw-value {
+    font-size: 12px;
+    color: #{"@outline"};
+}
+
+.hw-bar {
+    min-height: 6px;
+    border-radius: 3px;
+    margin-top: 4px;
+
+    trough {
+        border-radius: 3px;
+        background: #{"@surface_container_high"};
+        min-height: 6px;
+    }
+
+    block.filled {
+        border-radius: 3px;
+        background: #{"@primary"};
+        min-height: 6px;
+    }
+
+    block.empty {
+        background: transparent;
+    }
+}
+
+.hw-net {
+    padding: 4px 0;
+}
+
+.hw-net-label {
+    font-size: 12px;
+    color: #{"@on_surface_variant"};
+}
+
+.hw-procs {
+    padding: 4px 0;
+    border-top: 1px solid #{"@outline_variant"};
+    padding-top: 8px;
+}
+
+.hw-procs-title {
+    font-size: 12px;
+    font-weight: bold;
+    color: #{"@on_surface_variant"};
+    margin-bottom: 4px;
+}
+
+.hw-procs-list {
+    font-size: 11px;
+    color: #{"@outline"};
+}
+
+// ═══════════════════════════════════════════════════════════
+//   CALENDAR POPUP
+// ═══════════════════════════════════════════════════════════
+
+window.CalendarPopup {
+    background: transparent;
+}
+
+.cal-popup-content {
+    background: #{"@surface_container"};
+    border-radius: 1rem;
+    padding: 16px;
+    border: 1px solid #{"@outline_variant"};
+    min-width: 280px;
+}
+
+.cal-info {
+    padding-bottom: 8px;
+    border-bottom: 1px solid #{"@outline_variant"};
+}
+
+.cal-time {
+    font-size: 32px;
+    font-weight: bold;
+    color: #{"@on_surface"};
+}
+
+.cal-date-full {
+    font-size: 13px;
+    color: #{"@primary"};
+}
+
+.cal-uptime {
+    font-size: 11px;
+    color: #{"@outline"};
+}
+
+.cal-header {
+    padding: 0 4px;
+}
+
+.cal-nav {
+    color: #{"@on_surface_variant"};
+    min-width: 28px;
+    min-height: 28px;
+    padding: 0;
+
+    &:hover {
+        color: #{"@primary"};
+    }
+}
+
+.cal-month-btn {
+    padding: 4px 8px;
+
+    &:hover {
+        color: #{"@primary"};
+    }
+}
+
+.cal-month {
+    font-size: 14px;
+    font-weight: bold;
+    color: #{"@on_surface"};
+}
+
+.cal-days-header {
+    font-size: 11px;
+    font-weight: bold;
+    color: #{"@primary"};
+    font-family: "CaskaydiaCove Nerd Font Mono";
+}
+
+.cal-grid {
+    font-size: 12px;
+    color: #{"@on_surface_variant"};
+    font-family: "CaskaydiaCove Nerd Font Mono";
+}
