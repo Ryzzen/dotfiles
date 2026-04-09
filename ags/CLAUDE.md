@@ -54,14 +54,46 @@ AGS handles TypeScript compilation internally — there is no separate build ste
 
 `tsconfig.json` targets ES2022 modules / ES2020 output with `ags/gtk4` JSX. Generated GObject type bindings live in `@girs/` (auto-generated, do not edit manually). Custom ambient type declarations are in `env.d.ts`.
 
-## Where We Left Off (2026-04-09)
+## Where We Left Off (2026-04-09, evening)
 
-Working on multi-monitor handling for the `Bar`. Uncommitted changes:
+Multi-monitor handling kept on the reactive pattern BUT confirmed to crash on monitor hotplug due to a **GDK4 Wayland bug** (details below). Workaround in progress: run AGS as a systemd user service with `Restart=on-failure` so the crash-loop cycle is 1 s instead of permanent.
 
-- `widgets/Bar.tsx` — the `Bars()` export no longer uses `<For each={createBinding(app, "monitors")}>`. It now iterates `Gdk.Display.get_default().get_monitors()` imperatively at startup and calls `Bar({ gdkmonitor })` for each one. Trade-off: no live reaction to monitor hotplug from inside AGS anymore — that's delegated to the watchdog below.
-- `app.tsx` — dropped the unused `Astal` import.
-- `../ressources/scripts/ags-monitor-watch.sh` (new) — polls `hyprctl monitors -j` every 2s; when the monitor count changes it `pkill`s `ags run` and restarts it. Also restarts AGS if it crashes.
-- `../hypr/hyprland.conf` — `exec-once = ags run` replaced with `exec-once = ~/.config/ressources/scripts/ags-monitor-watch.sh`.
-- `../hypr/hypr` — new symlink to `/home/ryzzen/NixOS/dotfiles/hypr/`.
+### Reactive Bars() + BorderOverlay work (unchanged from earlier today)
 
-Open question / next step: verify the watchdog actually catches hotplug events cleanly and that the new imperative `Bars()` doesn't leak windows on restart.
+- `widgets/Bar.tsx` — `Bars()` uses `<For each={createBinding(app, "monitors")}>` with a `cleanup` callback that destroys the window and strips its `barRefs` entry (key: connector name, parsed from `window.name` prefixed `bar-`). GDK4's monitor ListModel preserves `Gdk.Monitor` identity across hotplug, so only the added/removed slot is touched; surviving bars are left alone. Contains the earlier dead-code cleanup + performance pass on `BorderOverlay` (island-skip frame-culling, inlined `colorAt`, halved `CURVE_STEPS`/`LINE_STEPS`). A comment block above `Bars()` documents the GDK bug so future-you doesn't re-instrument.
+- `style.scss` — `.bar-inner` padding changed to `0 0 1px` so the bar sits flush with the screen top.
+- `../ressources/scripts/ags-monitor-watch.sh` — **deleted** (old poll-and-kill workaround).
+- `../hypr/hypr` — **deleted** (self-referential symlink from the scratched workaround; committed in 64cd697).
+
+Pattern source: matshell (`Neurarian/matshell`, `widgets/bar/main.tsx`) — still canonical; the crash is not structural.
+
+### GDK4 hotplug crash (triaged this session)
+
+Environment: **GTK 4.18.5 + Hyprland 0.49.0 + NVIDIA 570** (Vulkan via GDK).
+
+Sequence on monitor unplug/replug (proven via a `[bar-diag]` probe in `Bar.tsx` + heartbeat timer, both removed afterward):
+
+```
+[bar-diag] items-changed removed=1 added=0 total=1
+(gjs): Gdk-DEBUG: warning: queue 0x... destroyed while proxies still attached:
+  wl_registry#... still attached
+  wl_registry#... still attached
+...
+(gjs): Gdk-DEBUG: Tried to add event to destroyed queue
+error: signal: aborted (core dumped)
+```
+
+Root cause: GDK4 tears down a per-monitor `wl_event_queue` when a `Gdk.Monitor` leaves `Gdk.Display.get_monitors()` but leaks `wl_registry` proxies still attached to that queue. Any subsequent event routed through those registries (replug, new global) aborts via `g_log` → `abort()`. **Proven non-AGS** by reproducing the same crash with a no-op `<For>` cleanup that never touches the window.
+
+Not fixable from `Bar.tsx`. See `~/.claude/projects/-home-ryzzen-NixOS-dotfiles/memory/project_gdk4_monitor_crash.md` for the full triage. User declined producing an upstream C repro.
+
+### Workaround landed (not yet rebuilt/tested)
+
+- `../../nix-config/home-manager/home.nix` — added `systemd.user.services.ags` next to the existing `programs.ags` block. `ExecStart=${pkgs.ags}/bin/ags run`, `Restart=on-failure`, `RestartSec=1`, `StartLimitBurst=10 / StartLimitIntervalSec=30`, `PartOf`/`WantedBy = graphical-session.target`.
+- `../hypr/hyprland.conf` — replaced `exec-once = ags run` (line 274) with three `exec-once` lines: `dbus-update-activation-environment --systemd ...`, `systemctl --user import-environment ...`, `systemctl --user start graphical-session.target`. The env vars pushed are `WAYLAND_DISPLAY XDG_CURRENT_DESKTOP HYPRLAND_INSTANCE_SIGNATURE` — the third one is what AstalHyprland needs to find the IPC socket.
+
+### Open items
+
+- **Test the workaround**: `sudo nixos-rebuild switch --flake ~/NixOS/nix-config`, then log out/in of Hyprland. Verify with `systemctl --user status ags` and `journalctl --user -u ags -f`. Unplug/replug should show a SIGABRT then `Started ags.service` ~1 s later. If `ags.service` comes up `inactive` after the rebuild, the env-import ordering inside `graphical-session.target` may need an explicit `systemctl --user start ags.service` in hyprland.conf as a fallback.
+- **Mystery spdlog-format log lines** appearing in `ags run` output. Literal byte match only exists in Waybar binaries, yet `pgrep waybar` was empty. Next step: `strace -f -e trace=execve -o /tmp/ags-trace.log ags run` to catch whoever execs the stray waybar. Unchanged from the morning session.
+- **Long-term**: if nixpkgs gets a GTK 4.20+ bump, retest without the restart workaround — the `queue destroyed while proxies still attached` warning disappearing is the green light to rely on in-process reactive hotplug and potentially drop the systemd service.

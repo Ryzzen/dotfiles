@@ -781,6 +781,13 @@ export default function Bars() {
     // bar windows in place without recreating untouched ones. Cleanup drops
     // the per-monitor entry from `barRefs` so the overlay draw func for any
     // subsequent frame stops targeting the destroyed widgets.
+    //
+    // KNOWN BUG (GTK 4.18.5 + Hyprland 0.49.0, NVIDIA): unplug followed by
+    // replug SIGABRTs with "Tried to add event to destroyed queue", because
+    // GDK4 leaks wl_registry proxies attached to a per-monitor event queue
+    // it tears down on monitor removal. Not fixable from here — verified by
+    // reproducing with a no-op cleanup that never touches the window. Fix
+    // path is a GTK4 / Hyprland upgrade via nixpkgs.
     const monitors = createBinding(app, "monitors")
     return (
         <For
