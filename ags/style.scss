@@ -30,10 +30,14 @@ window.Bar {
 
 .bar-inner {
     background: transparent;
-    // 1px top/bottom padding gives the border overlay room for the
-    // outer half of its 2px stroke (which would otherwise be clipped at
-    // y=0 / y=totalH, making the stroke appear to sit inside the fill).
-    padding: 1px 0;
+    // 1px bottom padding gives the border overlay room for the outer
+    // half of its 2px stroke along the bottom edge (otherwise it'd clip
+    // at y=totalH and appear to sit inside the fill). No top padding:
+    // the window is anchored TOP and we want the colored sections flush
+    // with the screen edge. The upper half of the stroke at the curve
+    // apex (y=0) gets clipped by 1px, but that's a single-point apex on
+    // a smooth curve — visually imperceptible.
+    padding: 0 0 1px;
 }
 
 // ── Bar Sections ─────────────────────────────────────────────

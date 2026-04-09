@@ -56,16 +56,24 @@ const PULSE_W = 0.07      // pulse glow radius (fraction of path length)
 const TRAIL_LEN = 0.18    // trail length behind pulse
 const TRAIL_ALPHA = 0.18  // max trail brightness
 const ANGLE_W = 48        // must match RoundedAngle contentWidth
-const CURVE_STEPS = 64
-const LINE_STEPS = 64     // subdivide straight sections too
+// 32 steps per segment: curves are ~60px long → ~1.9px per segment (visually
+// smooth), straight sections get ~12-20 gradient stops (enough to resolve the
+// pulse gaussian via linear interpolation). Halving from 64 cuts cairo calls
+// and gradient-stop count by 2× with no observable difference.
+const CURVE_STEPS = 32
+const LINE_STEPS = 32
+// Meet-glow gaussian radius (fraction of path length), matched in the glow
+// falloff below and in the per-island activity range check.
+const MEET_RADIUS = 0.3
 
 // Per-monitor section widget refs for the border overlay (keyed by connector name).
-// left/center/right are the three main content boxes; angleL is the topright angle
-// immediately after bar-left, angleCL/angleCR are the topleft/topright angles that
-// flank the workspaces box, and angleR is the topleft angle just before bar-right.
+// left/right are the bar-left and bar-right content boxes; angleL is the topright
+// angle immediately after bar-left, angleCL/angleCR are the topleft/topright angles
+// that flank the workspaces box, and angleR is the topleft angle just before
+// bar-right. The center workspaces box itself doesn't need a ref because the path
+// along its bottom is bridged directly between angleCL and angleCR.
 type BarRefs = {
     left: Gtk.Widget | null
-    center: Gtk.Widget | null
     right: Gtk.Widget | null
     angleL: Gtk.Widget | null
     angleCL: Gtk.Widget | null
@@ -76,12 +84,6 @@ const barRefs = new Map<string, BarRefs>()
 
 function easeInOutSine(t: number): number {
     return -(Math.cos(Math.PI * t) - 1) / 2
-}
-
-function gaussFalloff(dist: number, radius: number): number {
-    if (dist > radius) return 0
-    const x = dist / radius
-    return Math.exp(-x * x * 5)
 }
 
 // Ping-pong: 0→0.5→0 smoothly (no discontinuity)
@@ -114,6 +116,20 @@ function addLine(pts: Pt[], x0: number, y0: number, x1: number, y1: number) {
     }
 }
 
+// Cumulative 2D arc-lengths along a point list; lens[0]=0 and
+// lens[n-1]=totalLen. Pre-sized array write avoids `push` reallocations.
+function arcLengths(pts: Pt[]): number[] {
+    const n = pts.length
+    const lens = new Array<number>(n)
+    lens[0] = 0
+    for (let i = 1; i < n; i++) {
+        const dx = pts[i].x - pts[i - 1].x
+        const dy = pts[i].y - pts[i - 1].y
+        lens[i] = lens[i - 1] + Math.sqrt(dx * dx + dy * dy)
+    }
+    return lens
+}
+
 function BorderOverlay({ connector }: { connector: string }) {
     return (
         <drawingarea
@@ -121,16 +137,16 @@ function BorderOverlay({ connector }: { connector: string }) {
             vexpand
             canTarget={false}
             $={(self: Gtk.DrawingArea) => {
-                self.set_draw_func((_da, cr, totalW, totalH) => {
+                self.set_draw_func((_da, cr, totalW, _totalH) => {
                     if (!self.get_mapped()) return
                     const refs = barRefs.get(connector)
                     if (
-                        !refs?.left || !refs?.center || !refs?.right ||
+                        !refs?.left || !refs?.right ||
                         !refs?.angleL || !refs?.angleCL || !refs?.angleCR || !refs?.angleR ||
                         totalW <= 0
                     ) return
                     if (
-                        !refs.left.get_mapped() || !refs.center.get_mapped() || !refs.right.get_mapped() ||
+                        !refs.left.get_mapped() || !refs.right.get_mapped() ||
                         !refs.angleL.get_mapped() || !refs.angleCL.get_mapped() ||
                         !refs.angleCR.get_mapped() || !refs.angleR.get_mapped()
                     ) return
@@ -142,30 +158,27 @@ function BorderOverlay({ connector }: { connector: string }) {
                     }
 
                     const lx = getX(refs.left)
-                    const cx = getX(refs.center)
                     const rx = getX(refs.right)
                     const alx = getX(refs.angleL)
                     const clx = getX(refs.angleCL)
                     const crx = getX(refs.angleCR)
                     const arx = getX(refs.angleR)
                     if (
-                        lx === null || cx === null || rx === null ||
+                        lx === null || rx === null ||
                         alx === null || clx === null || crx === null || arx === null
                     ) return
 
-                    const lw = refs.left.get_width()
-                    const cw = refs.center.get_width()
                     const rw = refs.right.get_width()
                     const alw = refs.angleL.get_width()
                     const clw = refs.angleCL.get_width()
                     const crw = refs.angleCR.get_width()
                     const arw = refs.angleR.get_width()
                     // Bottom of the curves: match the angle widget's *actual* drawn
-                    // bottom exactly, so the Bezier control points (P2/P3) are at the
-                    // same y as the angle widget's curveTo endpoint. Using totalH -
-                    // BORDER_PX/2 vertically compresses the S-curve relative to the
-                    // angle's own curve and pushes the stroke inside the filled
-                    // wedge on the curved sides.
+                    // bottom exactly, so the Bezier control points (P2/P3) sit on the
+                    // same y as the angle widget's curveTo endpoint. Using the draw
+                    // area's totalH instead would vertically compress the S-curve
+                    // relative to the angle's own curve and push the stroke inside
+                    // the filled wedge on the curved sides.
                     const bot = refs.angleCL.get_height()
 
                     // Build three island contours with evenly subdivided segments.
@@ -190,25 +203,17 @@ function BorderOverlay({ connector }: { connector: string }) {
                     addCurve(i3, arx, 0, arx + arw / 2, 0, arx + arw / 2, bot, arx + arw, bot)
                     addLine(i3, arx + arw, bot, rx + rw, bot)
 
-                    // Compute cumulative arc-length for each island
-                    function arcLengths(pts: Pt[]): number[] {
-                        const lens = [0]
-                        for (let i = 1; i < pts.length; i++) {
-                            const dx = pts[i].x - pts[i - 1].x
-                            const dy = pts[i].y - pts[i - 1].y
-                            lens.push(lens[i - 1] + Math.sqrt(dx * dx + dy * dy))
-                        }
-                        return lens
-                    }
-
-                    // Build a single unified path across all islands for consistent parameterization
+                    // Arc-length parameterisation across all three islands
                     const allIslands = [i1, i2, i3]
-                    const allLens = allIslands.map(arcLengths)
-                    const islandTotalLens = allLens.map(l => l[l.length - 1])
-                    const grandTotal = islandTotalLens.reduce((a, b) => a + b, 0)
-
-                    // Cumulative offset per island in the grand path
-                    const islandOffsets = [0, islandTotalLens[0], islandTotalLens[0] + islandTotalLens[1]]
+                    const allLens = [arcLengths(i1), arcLengths(i2), arcLengths(i3)]
+                    const total0 = allLens[0][allLens[0].length - 1]
+                    const total1 = allLens[1][allLens[1].length - 1]
+                    const total2 = allLens[2][allLens[2].length - 1]
+                    const grandTotal = total0 + total1 + total2
+                    if (grandTotal <= 0) return
+                    const invGrandTotal = 1 / grandTotal
+                    const islandTotals = [total0, total1, total2]
+                    const islandOffsets = [0, total0, total0 + total1]
 
                     // Animation: ping-pong pulses (no discontinuity)
                     const animPos = getAnimPos()  // 0→0.5→0 smoothly
@@ -221,78 +226,119 @@ function BorderOverlay({ connector }: { connector: string }) {
                     // Meeting flash when pulses converge at center
                     const meetDist = rightPos - leftPos
                     const meetGlow = meetDist < 0.12 ? (1 - meetDist / 0.12) * 0.35 : 0
+                    const hasMeet = meetGlow > 0.001
+
+                    // Precompute meet-glow mix color (constant across frame)
+                    const mixR = (pr + ar) * 0.5
+                    const mixG = (pg + ag) * 0.5
+                    const mixB = (pb + ab) * 0.5
+
+                    // Active frac ranges: outside these a sample's alpha is
+                    // guaranteed 0, so we can skip an entire island if its
+                    // [isleStart, isleEnd] frac range doesn't overlap any of them.
+                    const lLo = leftPos - TRAIL_LEN
+                    const lHi = leftPos + PULSE_W
+                    const rLo = rightPos - PULSE_W
+                    const rHi = rightPos + TRAIL_LEN
+                    const mLo = 0.5 - MEET_RADIUS
+                    const mHi = 0.5 + MEET_RADIUS
+
+                    const invPulseW = 1 / PULSE_W
+                    const invTrailLen = 1 / TRAIL_LEN
+                    const invMeetRadius = 1 / MEET_RADIUS
 
                     cr.setLineWidth(BORDER_PX)
                     cr.setLineCap(1)  // ROUND
                     cr.setLineJoin(1) // ROUND
 
-                    // Helper: compute color at a given path fraction
-                    function colorAt(frac: number): [number, number, number, number] {
-                        let alpha = 0, rr = 0, gg = 0, bb = 0
-
-                        const lDist = Math.abs(frac - leftPos)
-                        const lGlow = gaussFalloff(lDist, PULSE_W) * 0.9
-                        if (lGlow > alpha) { alpha = lGlow; rr = pr; gg = pg; bb = pb }
-
-                        if (frac < leftPos && frac > leftPos - TRAIL_LEN) {
-                            const tf = (leftPos - frac) / TRAIL_LEN
-                            const ta = TRAIL_ALPHA * (1 - tf * tf)
-                            if (ta > alpha) { alpha = ta; rr = pr; gg = pg; bb = pb }
-                        }
-
-                        const rDist = Math.abs(frac - rightPos)
-                        const rGlow = gaussFalloff(rDist, PULSE_W) * 0.9
-                        if (rGlow > alpha) { alpha = rGlow; rr = ar; gg = ag; bb = ab }
-
-                        if (frac > rightPos && frac < rightPos + TRAIL_LEN) {
-                            const tf = (frac - rightPos) / TRAIL_LEN
-                            const ta = TRAIL_ALPHA * (1 - tf * tf)
-                            if (ta > alpha) { alpha = ta; rr = ar; gg = ag; bb = ab }
-                        }
-
-                        if (meetGlow > 0) {
-                            const centerDist = Math.abs(frac - 0.5)
-                            const cg = meetGlow * gaussFalloff(centerDist, 0.3)
-                            if (cg > 0) {
-                                const mr = pr * 0.5 + ar * 0.5
-                                const mg = pg * 0.5 + ag * 0.5
-                                const mb = pb * 0.5 + ab * 0.5
-                                alpha = Math.min(1, alpha + cg)
-                                rr = rr * (1 - cg) + mr * cg
-                                gg = gg * (1 - cg) + mg * cg
-                                bb = bb * (1 - cg) + mb * cg
-                            }
-                        }
-
-                        return [rr, gg, bb, alpha]
-                    }
-
                     // Draw each island as one continuous path with a gradient
                     for (let isle = 0; isle < 3; isle++) {
+                        const isleTotal = islandTotals[isle]
+                        if (isleTotal <= 0) continue
+
+                        const offset = islandOffsets[isle]
+                        const isleStart = offset * invGrandTotal
+                        const isleEnd = (offset + isleTotal) * invGrandTotal
+
+                        // Skip if no active effect touches this island's frac range
+                        const touchesLeft = isleStart <= lHi && lLo <= isleEnd
+                        const touchesRight = isleStart <= rHi && rLo <= isleEnd
+                        const touchesMeet = hasMeet && isleStart <= mHi && mLo <= isleEnd
+                        if (!touchesLeft && !touchesRight && !touchesMeet) continue
+
                         const pts = allIslands[isle]
                         const lens = allLens[isle]
-                        const offset = islandOffsets[isle]
-                        const totalLen = islandTotalLens[isle]
-
-                        if (pts.length < 2 || totalLen <= 0) continue
+                        const n = pts.length
+                        if (n < 2) continue
 
                         const x0 = pts[0].x
-                        const x1 = pts[pts.length - 1].x
-                        if (Math.abs(x1 - x0) < 1) continue
+                        const x1 = pts[n - 1].x
+                        const xSpan = x1 - x0
+                        if (xSpan < 1) continue
+                        const invXSpan = 1 / xSpan
 
                         // Build gradient with color stops at each point's x-position
                         const grad = new cairo.LinearGradient(x0, 0, x1, 0)
-                        for (let j = 0; j < pts.length; j++) {
-                            const frac = (offset + lens[j]) / grandTotal
-                            const [r, g, b, a] = colorAt(frac)
-                            const stop = (pts[j].x - x0) / (x1 - x0)
-                            grad.addColorStopRGBA(Math.max(0, Math.min(1, stop)), r, g, b, a)
+                        for (let j = 0; j < n; j++) {
+                            const frac = (offset + lens[j]) * invGrandTotal
+
+                            // Inlined colorAt — avoids function-call overhead and
+                            // the per-sample [r,g,b,a] array allocation.
+                            let alpha = 0, rr = 0, gg = 0, bb = 0
+
+                            // Left pulse head
+                            const lDist = frac > leftPos ? frac - leftPos : leftPos - frac
+                            if (lDist < PULSE_W) {
+                                const u = lDist * invPulseW
+                                const lGlow = Math.exp(-u * u * 5) * 0.9
+                                if (lGlow > alpha) { alpha = lGlow; rr = pr; gg = pg; bb = pb }
+                            }
+                            // Left trail (quadratic falloff behind pulse)
+                            if (frac < leftPos && frac > leftPos - TRAIL_LEN) {
+                                const tf = (leftPos - frac) * invTrailLen
+                                const ta = TRAIL_ALPHA * (1 - tf * tf)
+                                if (ta > alpha) { alpha = ta; rr = pr; gg = pg; bb = pb }
+                            }
+                            // Right pulse head
+                            const rDist = frac > rightPos ? frac - rightPos : rightPos - frac
+                            if (rDist < PULSE_W) {
+                                const u = rDist * invPulseW
+                                const rGlow = Math.exp(-u * u * 5) * 0.9
+                                if (rGlow > alpha) { alpha = rGlow; rr = ar; gg = ag; bb = ab }
+                            }
+                            // Right trail
+                            if (frac > rightPos && frac < rightPos + TRAIL_LEN) {
+                                const tf = (frac - rightPos) * invTrailLen
+                                const ta = TRAIL_ALPHA * (1 - tf * tf)
+                                if (ta > alpha) { alpha = ta; rr = ar; gg = ag; bb = ab }
+                            }
+                            // Meet-glow additive blend
+                            if (hasMeet) {
+                                const cDist = frac > 0.5 ? frac - 0.5 : 0.5 - frac
+                                if (cDist < MEET_RADIUS) {
+                                    const u = cDist * invMeetRadius
+                                    const cg = meetGlow * Math.exp(-u * u * 5)
+                                    if (cg > 0) {
+                                        alpha += cg
+                                        if (alpha > 1) alpha = 1
+                                        const im = 1 - cg
+                                        rr = rr * im + mixR * cg
+                                        gg = gg * im + mixG * cg
+                                        bb = bb * im + mixB * cg
+                                    }
+                                }
+                            }
+
+                            let stop = (pts[j].x - x0) * invXSpan
+                            if (stop < 0) stop = 0
+                            else if (stop > 1) stop = 1
+                            grad.addColorStopRGBA(stop, rr, gg, bb, alpha)
                         }
 
                         // Build continuous path and stroke once
                         cr.newPath()
                         cr.moveTo(pts[0].x, pts[0].y)
-                        for (let j = 1; j < pts.length; j++) {
+                        for (let j = 1; j < n; j++) {
                             cr.lineTo(pts[j].x, pts[j].y)
                         }
                         cr.setSource(grad)
@@ -395,13 +441,13 @@ function QuickLinks() {
 
 // ── Workspaces ──────────────────────────────────────────────
 
-function Workspaces({ setup }: { setup?: (self: Gtk.Widget) => void }) {
+function Workspaces() {
     const hypr = Hyprland.get_default()
     const workspaces = createBinding(hypr, "workspaces")
     const focusedWs = createBinding(hypr, "focusedWorkspace")
 
     return (
-        <box class="ws-container" spacing={0} $={setup}>
+        <box class="ws-container" spacing={0}>
             <For each={workspaces}>
                 {(ws) => {
                     const isFocused = focusedWs((fw) => fw?.id === ws.id)
@@ -669,7 +715,6 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
     const connector = gdkmonitor.get_connector() || "unknown"
     const refs: BarRefs = {
         left: null,
-        center: null,
         right: null,
         angleL: null,
         angleCL: null,
@@ -705,7 +750,7 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                     {/* ── Center: workspaces ── */}
                     <box $type="center">
                         <RoundedAngle place="topleft" setup={(s) => { refs.angleCL = s }} />
-                        <Workspaces setup={(s: Gtk.Widget) => { refs.center = s }} />
+                        <Workspaces />
                         <RoundedAngle place="topright" setup={(s) => { refs.angleCR = s }} />
                     </box>
 
@@ -731,10 +776,25 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
 }
 
 export default function Bars() {
-    const display = Gdk.Display.get_default()!
-    const monitors = display.get_monitors()
-    for (let i = 0; i < monitors.get_n_items(); i++) {
-        const gdkmon = monitors.get_item(i) as Gdk.Monitor
-        Bar({ gdkmonitor: gdkmon })
-    }
+    // Reactive per-monitor Bar. `app.monitors` wraps the GDK display's monitor
+    // ListModel, which fires items-changed on hotplug, so <For> adds/removes
+    // bar windows in place without recreating untouched ones. Cleanup drops
+    // the per-monitor entry from `barRefs` so the overlay draw func for any
+    // subsequent frame stops targeting the destroyed widgets.
+    const monitors = createBinding(app, "monitors")
+    return (
+        <For
+            each={monitors}
+            cleanup={(win) => {
+                const w = win as Gtk.Window
+                const name = w.name ?? ""
+                if (name.startsWith("bar-")) {
+                    barRefs.delete(name.slice(4))
+                }
+                w.destroy()
+            }}
+        >
+            {(mon) => <Bar gdkmonitor={mon as Gdk.Monitor} />}
+        </For>
+    )
 }
