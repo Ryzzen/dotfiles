@@ -30,6 +30,10 @@ window.Bar {
 
 .bar-inner {
     background: transparent;
+    // 1px top/bottom padding gives the border overlay room for the
+    // outer half of its 2px stroke (which would otherwise be clipped at
+    // y=0 / y=totalH, making the stroke appear to sit inside the fill).
+    padding: 1px 0;
 }
 
 // ── Bar Sections ─────────────────────────────────────────────

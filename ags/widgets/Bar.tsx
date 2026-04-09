@@ -2,7 +2,6 @@ import { Astal, Gtk, Gdk } from "ags/gtk4"
 import { createBinding, createComputed, For } from "ags"
 import { createPoll } from "ags/time"
 import { execAsync } from "ags/process"
-import { readFile } from "ags/file"
 import app from "ags/gtk4/app"
 import GLib from "gi://GLib"
 import Graphene from "gi://Graphene"
@@ -13,6 +12,7 @@ import Battery from "gi://AstalBattery"
 import Bluetooth from "gi://AstalBluetooth"
 import Tray from "gi://AstalTray"
 import cairo from "cairo"
+import { getWalSurface, getWalPrimary, getWalAccent2 } from "../walColors"
 
 // Nerd Font icon constants (CaskaydiaCove Nerd Font codepoints)
 const ICON = {
@@ -48,38 +48,6 @@ const ICON = {
     POWER:      "\u{f011}",  // nf-fa-power_off
 }
 
-// ── Pywal color helpers ────────────────────────────────────
-
-function parseHex(hex: string): [number, number, number] {
-    return [
-        parseInt(hex.slice(1, 3), 16) / 255,
-        parseInt(hex.slice(3, 5), 16) / 255,
-        parseInt(hex.slice(5, 7), 16) / 255,
-    ]
-}
-
-function walColorLines(): string[] {
-    const home = GLib.get_home_dir()
-    return readFile(`${home}/.cache/wal/colors`).trim().split("\n")
-}
-
-function walSurface(): [number, number, number] {
-    const [r, g, b] = parseHex(walColorLines()[0])
-    return [
-        Math.min(1, r + 20 / 255),
-        Math.min(1, g + 20 / 255),
-        Math.min(1, b + 20 / 255),
-    ]
-}
-
-function walPrimary(): [number, number, number] {
-    return parseHex(walColorLines()[4])
-}
-
-function walAccent2(): [number, number, number] {
-    return parseHex(walColorLines()[5])
-}
-
 // ── Animated border ────────────────────────────────────────
 
 const ANIM_PERIOD = 4.0   // seconds for full ping-pong cycle
@@ -91,8 +59,19 @@ const ANGLE_W = 48        // must match RoundedAngle contentWidth
 const CURVE_STEPS = 64
 const LINE_STEPS = 64     // subdivide straight sections too
 
-// Per-monitor section widget refs for the border overlay (keyed by connector name)
-type BarRefs = { left: Gtk.Widget | null; center: Gtk.Widget | null; right: Gtk.Widget | null }
+// Per-monitor section widget refs for the border overlay (keyed by connector name).
+// left/center/right are the three main content boxes; angleL is the topright angle
+// immediately after bar-left, angleCL/angleCR are the topleft/topright angles that
+// flank the workspaces box, and angleR is the topleft angle just before bar-right.
+type BarRefs = {
+    left: Gtk.Widget | null
+    center: Gtk.Widget | null
+    right: Gtk.Widget | null
+    angleL: Gtk.Widget | null
+    angleCL: Gtk.Widget | null
+    angleCR: Gtk.Widget | null
+    angleR: Gtk.Widget | null
+}
 const barRefs = new Map<string, BarRefs>()
 
 function easeInOutSine(t: number): number {
@@ -145,8 +124,16 @@ function BorderOverlay({ connector }: { connector: string }) {
                 self.set_draw_func((_da, cr, totalW, totalH) => {
                     if (!self.get_mapped()) return
                     const refs = barRefs.get(connector)
-                    if (!refs?.left || !refs?.center || !refs?.right || totalW <= 0) return
-                    if (!refs.left.get_mapped() || !refs.center.get_mapped() || !refs.right.get_mapped()) return
+                    if (
+                        !refs?.left || !refs?.center || !refs?.right ||
+                        !refs?.angleL || !refs?.angleCL || !refs?.angleCR || !refs?.angleR ||
+                        totalW <= 0
+                    ) return
+                    if (
+                        !refs.left.get_mapped() || !refs.center.get_mapped() || !refs.right.get_mapped() ||
+                        !refs.angleL.get_mapped() || !refs.angleCL.get_mapped() ||
+                        !refs.angleCR.get_mapped() || !refs.angleR.get_mapped()
+                    ) return
 
                     const origin = new Graphene.Point({ x: 0, y: 0 })
                     const getX = (w: Gtk.Widget): number | null => {
@@ -157,31 +144,51 @@ function BorderOverlay({ connector }: { connector: string }) {
                     const lx = getX(refs.left)
                     const cx = getX(refs.center)
                     const rx = getX(refs.right)
-                    if (lx === null || cx === null || rx === null) return
+                    const alx = getX(refs.angleL)
+                    const clx = getX(refs.angleCL)
+                    const crx = getX(refs.angleCR)
+                    const arx = getX(refs.angleR)
+                    if (
+                        lx === null || cx === null || rx === null ||
+                        alx === null || clx === null || crx === null || arx === null
+                    ) return
 
                     const lw = refs.left.get_width()
                     const cw = refs.center.get_width()
                     const rw = refs.right.get_width()
-                    const aw = ANGLE_W
-                    // Pull bottom edge up by border width so it sits on the box edge
-                    const bot = totalH - BORDER_PX / 2
+                    const alw = refs.angleL.get_width()
+                    const clw = refs.angleCL.get_width()
+                    const crw = refs.angleCR.get_width()
+                    const arw = refs.angleR.get_width()
+                    // Bottom of the curves: match the angle widget's *actual* drawn
+                    // bottom exactly, so the Bezier control points (P2/P3) are at the
+                    // same y as the angle widget's curveTo endpoint. Using totalH -
+                    // BORDER_PX/2 vertically compresses the S-curve relative to the
+                    // angle's own curve and pushes the stroke inside the filled
+                    // wedge on the curved sides.
+                    const bot = refs.angleCL.get_height()
 
-                    // Build three island contours with evenly subdivided segments
-                    // Island 1: bar-left bottom → topright curve up
+                    // Build three island contours with evenly subdivided segments.
+                    // Each curve uses the angle widget's actual position and width so
+                    // the border path exactly tracks the filled angle shape; each
+                    // addLine spans from the box edge to the angle edge, so any
+                    // centerbox gap between the two is bridged along the bottom.
+
+                    // Island 1: bar-left bottom → topright angle curve up
                     const i1: Pt[] = [{ x: lx, y: bot }]
-                    addLine(i1, lx, bot, lx + lw, bot)
-                    addCurve(i1, lx + lw, bot, lx + lw + aw / 2, bot, lx + lw + aw / 2, 0, lx + lw + aw, 0)
+                    addLine(i1, lx, bot, alx, bot)
+                    addCurve(i1, alx, bot, alx + alw / 2, bot, alx + alw / 2, 0, alx + alw, 0)
 
-                    // Island 2: topleft curve down → workspaces bottom → topright curve up
-                    const i2: Pt[] = [{ x: cx - aw, y: 0 }]
-                    addCurve(i2, cx - aw, 0, cx - aw / 2, 0, cx - aw / 2, bot, cx, bot)
-                    addLine(i2, cx, bot, cx + cw, bot)
-                    addCurve(i2, cx + cw, bot, cx + cw + aw / 2, bot, cx + cw + aw / 2, 0, cx + cw + aw, 0)
+                    // Island 2: topleft angle curve down → workspaces bottom → topright angle curve up
+                    const i2: Pt[] = [{ x: clx, y: 0 }]
+                    addCurve(i2, clx, 0, clx + clw / 2, 0, clx + clw / 2, bot, clx + clw, bot)
+                    addLine(i2, clx + clw, bot, crx, bot)
+                    addCurve(i2, crx, bot, crx + crw / 2, bot, crx + crw / 2, 0, crx + crw, 0)
 
-                    // Island 3: topleft curve down → bar-right bottom
-                    const i3: Pt[] = [{ x: rx - aw, y: 0 }]
-                    addCurve(i3, rx - aw, 0, rx - aw / 2, 0, rx - aw / 2, bot, rx, bot)
-                    addLine(i3, rx, bot, rx + rw, bot)
+                    // Island 3: topleft angle curve down → bar-right bottom
+                    const i3: Pt[] = [{ x: arx, y: 0 }]
+                    addCurve(i3, arx, 0, arx + arw / 2, 0, arx + arw / 2, bot, arx + arw, bot)
+                    addLine(i3, arx + arw, bot, rx + rw, bot)
 
                     // Compute cumulative arc-length for each island
                     function arcLengths(pts: Pt[]): number[] {
@@ -205,8 +212,8 @@ function BorderOverlay({ connector }: { connector: string }) {
 
                     // Animation: ping-pong pulses (no discontinuity)
                     const animPos = getAnimPos()  // 0→0.5→0 smoothly
-                    const [pr, pg, pb] = walPrimary()
-                    const [ar, ag, ab] = walAccent2()
+                    const [pr, pg, pb] = getWalPrimary()
+                    const [ar, ag, ab] = getWalAccent2()
 
                     const leftPos = animPos          // 0 → 0.5 → 0
                     const rightPos = 1 - animPos     // 1 → 0.5 → 1
@@ -305,14 +312,21 @@ function BorderOverlay({ connector }: { connector: string }) {
 
 // ── RoundedAngle ───────────────────────────────────────────
 
-function RoundedAngle({ place }: { place: "topleft" | "topright" }) {
+function RoundedAngle({
+    place,
+    setup,
+}: {
+    place: "topleft" | "topright"
+    setup?: (self: Gtk.Widget) => void
+}) {
     return (
         <drawingarea
             vexpand
             contentWidth={ANGLE_W}
             $={(self: Gtk.DrawingArea) => {
+                setup?.(self)
                 self.set_draw_func((_area, cr, width, height) => {
-                    const [r, g, b] = walSurface()
+                    const [r, g, b] = getWalSurface()
                     cr.setSourceRGBA(r, g, b, 1)
 
                     if (place === "topright") {
@@ -653,7 +667,15 @@ function PowerButton() {
 function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
     const { TOP, LEFT, RIGHT } = Astal.WindowAnchor
     const connector = gdkmonitor.get_connector() || "unknown"
-    const refs: BarRefs = { left: null, center: null, right: null }
+    const refs: BarRefs = {
+        left: null,
+        center: null,
+        right: null,
+        angleL: null,
+        angleCL: null,
+        angleCR: null,
+        angleR: null,
+    }
     barRefs.set(connector, refs)
 
     return (
@@ -677,20 +699,20 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                             <SysTray />
                             <FocusedTitle />
                         </box>
-                        <RoundedAngle place="topright" />
+                        <RoundedAngle place="topright" setup={(s) => { refs.angleL = s }} />
                     </box>
 
                     {/* ── Center: workspaces ── */}
                     <box $type="center">
-                        <RoundedAngle place="topleft" />
+                        <RoundedAngle place="topleft" setup={(s) => { refs.angleCL = s }} />
                         <Workspaces setup={(s: Gtk.Widget) => { refs.center = s }} />
-                        <RoundedAngle place="topright" />
+                        <RoundedAngle place="topright" setup={(s) => { refs.angleCR = s }} />
                     </box>
 
                     {/* ── Right: angle + indicators + clock ── */}
                     <box $type="end">
                         <box hexpand />
-                        <RoundedAngle place="topleft" />
+                        <RoundedAngle place="topleft" setup={(s) => { refs.angleR = s }} />
                         <box class="bar-right" $={(s: Gtk.Widget) => { refs.right = s }} spacing={4}>
                             <HardwareStats />
                             <AudioIndicator />
