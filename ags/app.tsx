@@ -1,5 +1,4 @@
 import app from "ags/gtk4/app"
-import { Astal } from "ags/gtk4"
 import { readFile } from "ags/file"
 import GLib from "gi://GLib"
 import style from "./style.scss"

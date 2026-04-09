@@ -709,15 +709,10 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
 }
 
 export default function Bars() {
-    const monitors = createBinding(app, "monitors")
-    return (
-        <For each={monitors} cleanup={(win) => {
-            const w = win as Gtk.Window
-            const name = w.name
-            if (name) barRefs.delete(name.replace("bar-", ""))
-            w.destroy()
-        }}>
-            {(gdkmonitor) => <Bar gdkmonitor={gdkmonitor as Gdk.Monitor} />}
-        </For>
-    )
+    const display = Gdk.Display.get_default()!
+    const monitors = display.get_monitors()
+    for (let i = 0; i < monitors.get_n_items(); i++) {
+        const gdkmon = monitors.get_item(i) as Gdk.Monitor
+        Bar({ gdkmonitor: gdkmon })
+    }
 }

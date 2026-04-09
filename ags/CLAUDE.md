@@ -53,3 +53,15 @@ AGS handles TypeScript compilation internally — there is no separate build ste
 ## TypeScript Config
 
 `tsconfig.json` targets ES2022 modules / ES2020 output with `ags/gtk4` JSX. Generated GObject type bindings live in `@girs/` (auto-generated, do not edit manually). Custom ambient type declarations are in `env.d.ts`.
+
+## Where We Left Off (2026-04-09)
+
+Working on multi-monitor handling for the `Bar`. Uncommitted changes:
+
+- `widgets/Bar.tsx` — the `Bars()` export no longer uses `<For each={createBinding(app, "monitors")}>`. It now iterates `Gdk.Display.get_default().get_monitors()` imperatively at startup and calls `Bar({ gdkmonitor })` for each one. Trade-off: no live reaction to monitor hotplug from inside AGS anymore — that's delegated to the watchdog below.
+- `app.tsx` — dropped the unused `Astal` import.
+- `../ressources/scripts/ags-monitor-watch.sh` (new) — polls `hyprctl monitors -j` every 2s; when the monitor count changes it `pkill`s `ags run` and restarts it. Also restarts AGS if it crashes.
+- `../hypr/hyprland.conf` — `exec-once = ags run` replaced with `exec-once = ~/.config/ressources/scripts/ags-monitor-watch.sh`.
+- `../hypr/hypr` — new symlink to `/home/ryzzen/NixOS/dotfiles/hypr/`.
+
+Open question / next step: verify the watchdog actually catches hotplug events cleanly and that the new imperative `Bars()` doesn't leak windows on restart.
