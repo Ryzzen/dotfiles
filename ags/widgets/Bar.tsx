@@ -3,6 +3,7 @@ import { createBinding, createComputed, For } from "ags"
 import { createPoll } from "ags/time"
 import { execAsync } from "ags/process"
 import app from "ags/gtk4/app"
+import System from "system"
 import GLib from "gi://GLib"
 import Graphene from "gi://Graphene"
 import Hyprland from "gi://AstalHyprland"
@@ -137,6 +138,46 @@ function BorderOverlay({ connector }: { connector: string }) {
             vexpand
             canTarget={false}
             $={(self: Gtk.DrawingArea) => {
+                // ── Closure-scoped per-monitor state ────────────────────────
+                // Geometry (island point lists and arc-length tables) only
+                // changes when the bar's layout changes — essentially never
+                // during steady-state animation. We cache it so the per-frame
+                // draw path does zero JS allocation for geometry; the only
+                // unavoidable native allocations per frame are the three
+                // cairo.LinearGradient patterns (and their stops), which is
+                // the cost of keeping gradient-based rendering.
+                //
+                // Before this cache existed, every frame rebuilt ~227 `Pt`
+                // objects + ~227 arc-length numbers × every monitor × 60fps,
+                // which combined with the cairo pattern churn pushed GJS into
+                // a slow-GC regime where RSS crept up to several GB over
+                // hours. See `ps` on a freshly-launched ags vs one that has
+                // been running for minutes to reproduce.
+                const origin = new Graphene.Point({ x: 0, y: 0 })
+                const getX = (w: Gtk.Widget): number | null => {
+                    const [ok, pt] = w.compute_point(self, origin)
+                    return ok ? pt.x : null
+                }
+
+                // Cache invalidation keys — NaN sentinel guarantees first
+                // frame always rebuilds (NaN !== NaN in JS).
+                let c_lx = NaN, c_rx = NaN, c_rw = NaN
+                let c_alx = NaN, c_alw = NaN
+                let c_clx = NaN, c_clw = NaN
+                let c_crx = NaN, c_crw = NaN
+                let c_arx = NaN, c_arw = NaN
+                let c_bot = NaN
+                let cache: {
+                    pts: Pt[][]
+                    lens: number[][]
+                    totals: number[]
+                    offsets: number[]
+                    invGrandTotal: number
+                    x0s: number[]
+                    x1s: number[]
+                    invXSpans: number[]
+                } | null = null
+
                 self.set_draw_func((_da, cr, totalW, _totalH) => {
                     if (!self.get_mapped()) return
                     const refs = barRefs.get(connector)
@@ -150,12 +191,6 @@ function BorderOverlay({ connector }: { connector: string }) {
                         !refs.angleL.get_mapped() || !refs.angleCL.get_mapped() ||
                         !refs.angleCR.get_mapped() || !refs.angleR.get_mapped()
                     ) return
-
-                    const origin = new Graphene.Point({ x: 0, y: 0 })
-                    const getX = (w: Gtk.Widget): number | null => {
-                        const [ok, pt] = w.compute_point(self, origin)
-                        return ok ? pt.x : null
-                    }
 
                     const lx = getX(refs.left)
                     const rx = getX(refs.right)
@@ -181,39 +216,87 @@ function BorderOverlay({ connector }: { connector: string }) {
                     // the filled wedge on the curved sides.
                     const bot = refs.angleCL.get_height()
 
-                    // Build three island contours with evenly subdivided segments.
-                    // Each curve uses the angle widget's actual position and width so
-                    // the border path exactly tracks the filled angle shape; each
-                    // addLine spans from the box edge to the angle edge, so any
-                    // centerbox gap between the two is bridged along the bottom.
+                    // Rebuild geometry cache on layout change (rare — resize,
+                    // monitor swap, or first frame).
+                    if (
+                        lx !== c_lx || rx !== c_rx || rw !== c_rw ||
+                        alx !== c_alx || alw !== c_alw ||
+                        clx !== c_clx || clw !== c_clw ||
+                        crx !== c_crx || crw !== c_crw ||
+                        arx !== c_arx || arw !== c_arw ||
+                        bot !== c_bot
+                    ) {
+                        c_lx = lx; c_rx = rx; c_rw = rw
+                        c_alx = alx; c_alw = alw
+                        c_clx = clx; c_clw = clw
+                        c_crx = crx; c_crw = crw
+                        c_arx = arx; c_arw = arw
+                        c_bot = bot
 
-                    // Island 1: bar-left bottom → topright angle curve up
-                    const i1: Pt[] = [{ x: lx, y: bot }]
-                    addLine(i1, lx, bot, alx, bot)
-                    addCurve(i1, alx, bot, alx + alw / 2, bot, alx + alw / 2, 0, alx + alw, 0)
+                        // Build three island contours with evenly subdivided segments.
+                        // Each curve uses the angle widget's actual position and width so
+                        // the border path exactly tracks the filled angle shape; each
+                        // addLine spans from the box edge to the angle edge, so any
+                        // centerbox gap between the two is bridged along the bottom.
 
-                    // Island 2: topleft angle curve down → workspaces bottom → topright angle curve up
-                    const i2: Pt[] = [{ x: clx, y: 0 }]
-                    addCurve(i2, clx, 0, clx + clw / 2, 0, clx + clw / 2, bot, clx + clw, bot)
-                    addLine(i2, clx + clw, bot, crx, bot)
-                    addCurve(i2, crx, bot, crx + crw / 2, bot, crx + crw / 2, 0, crx + crw, 0)
+                        // Island 1: bar-left bottom → topright angle curve up
+                        const i1: Pt[] = [{ x: lx, y: bot }]
+                        addLine(i1, lx, bot, alx, bot)
+                        addCurve(i1, alx, bot, alx + alw / 2, bot, alx + alw / 2, 0, alx + alw, 0)
 
-                    // Island 3: topleft angle curve down → bar-right bottom
-                    const i3: Pt[] = [{ x: arx, y: 0 }]
-                    addCurve(i3, arx, 0, arx + arw / 2, 0, arx + arw / 2, bot, arx + arw, bot)
-                    addLine(i3, arx + arw, bot, rx + rw, bot)
+                        // Island 2: topleft angle curve down → workspaces bottom → topright angle curve up
+                        const i2: Pt[] = [{ x: clx, y: 0 }]
+                        addCurve(i2, clx, 0, clx + clw / 2, 0, clx + clw / 2, bot, clx + clw, bot)
+                        addLine(i2, clx + clw, bot, crx, bot)
+                        addCurve(i2, crx, bot, crx + crw / 2, bot, crx + crw / 2, 0, crx + crw, 0)
 
-                    // Arc-length parameterisation across all three islands
-                    const allIslands = [i1, i2, i3]
-                    const allLens = [arcLengths(i1), arcLengths(i2), arcLengths(i3)]
-                    const total0 = allLens[0][allLens[0].length - 1]
-                    const total1 = allLens[1][allLens[1].length - 1]
-                    const total2 = allLens[2][allLens[2].length - 1]
-                    const grandTotal = total0 + total1 + total2
-                    if (grandTotal <= 0) return
-                    const invGrandTotal = 1 / grandTotal
-                    const islandTotals = [total0, total1, total2]
-                    const islandOffsets = [0, total0, total0 + total1]
+                        // Island 3: topleft angle curve down → bar-right bottom
+                        const i3: Pt[] = [{ x: arx, y: 0 }]
+                        addCurve(i3, arx, 0, arx + arw / 2, 0, arx + arw / 2, bot, arx + arw, bot)
+                        addLine(i3, arx + arw, bot, rx + rw, bot)
+
+                        // Arc-length parameterisation across all three islands
+                        const l1 = arcLengths(i1)
+                        const l2 = arcLengths(i2)
+                        const l3 = arcLengths(i3)
+                        const total0 = l1[l1.length - 1]
+                        const total1 = l2[l2.length - 1]
+                        const total2 = l3[l3.length - 1]
+                        const grandTotal = total0 + total1 + total2
+                        if (grandTotal <= 0) { cache = null; return }
+
+                        const x0_1 = i1[0].x, x1_1 = i1[i1.length - 1].x
+                        const x0_2 = i2[0].x, x1_2 = i2[i2.length - 1].x
+                        const x0_3 = i3[0].x, x1_3 = i3[i3.length - 1].x
+                        const span1 = x1_1 - x0_1
+                        const span2 = x1_2 - x0_2
+                        const span3 = x1_3 - x0_3
+
+                        cache = {
+                            pts: [i1, i2, i3],
+                            lens: [l1, l2, l3],
+                            totals: [total0, total1, total2],
+                            offsets: [0, total0, total0 + total1],
+                            invGrandTotal: 1 / grandTotal,
+                            x0s: [x0_1, x0_2, x0_3],
+                            x1s: [x1_1, x1_2, x1_3],
+                            invXSpans: [
+                                span1 >= 1 ? 1 / span1 : 0,
+                                span2 >= 1 ? 1 / span2 : 0,
+                                span3 >= 1 ? 1 / span3 : 0,
+                            ],
+                        }
+                    }
+                    if (!cache) return
+
+                    const allIslands = cache.pts
+                    const allLens = cache.lens
+                    const islandTotals = cache.totals
+                    const islandOffsets = cache.offsets
+                    const invGrandTotal = cache.invGrandTotal
+                    const x0s = cache.x0s
+                    const x1s = cache.x1s
+                    const invXSpans = cache.invXSpans
 
                     // Animation: ping-pong pulses (no discontinuity)
                     const animPos = getAnimPos()  // 0→0.5→0 smoothly
@@ -271,14 +354,23 @@ function BorderOverlay({ connector }: { connector: string }) {
                         const n = pts.length
                         if (n < 2) continue
 
-                        const x0 = pts[0].x
-                        const x1 = pts[n - 1].x
-                        const xSpan = x1 - x0
-                        if (xSpan < 1) continue
-                        const invXSpan = 1 / xSpan
+                        const invXSpan = invXSpans[isle]
+                        if (invXSpan === 0) continue
+                        const x0 = x0s[isle]
+                        const x1 = x1s[isle]
 
-                        // Build gradient with color stops at each point's x-position
+                        // Build gradient with color stops, skipping runs of
+                        // consecutive zeros. Within a zero run we emit only
+                        // the first and last stop, which anchors the boundary
+                        // so cairo still interpolates correctly into/out of
+                        // adjacent non-zero bands. Outside the meet-glow window
+                        // (when most of each island is zero) this roughly
+                        // halves the number of addColorStopRGBA calls and the
+                        // cairo-internal stop-array growth driving native RSS.
                         const grad = new cairo.LinearGradient(x0, 0, x1, 0)
+                        let prevAlphaZero = false  // last EMITTED stop had alpha 0
+                        let pendingJ = -1          // index of last skipped zero
+
                         for (let j = 0; j < n; j++) {
                             const frac = (offset + lens[j]) * invGrandTotal
 
@@ -329,10 +421,39 @@ function BorderOverlay({ connector }: { connector: string }) {
                                 }
                             }
 
-                            let stop = (pts[j].x - x0) * invXSpan
-                            if (stop < 0) stop = 0
-                            else if (stop > 1) stop = 1
-                            grad.addColorStopRGBA(stop, rr, gg, bb, alpha)
+                            if (alpha === 0) {
+                                if (prevAlphaZero) {
+                                    // Mid-zero-run: remember as potential trail anchor.
+                                    pendingJ = j
+                                    continue
+                                }
+                                // First zero after a non-zero run — emit as trail anchor.
+                                let stop = (pts[j].x - x0) * invXSpan
+                                if (stop < 0) stop = 0
+                                else if (stop > 1) stop = 1
+                                grad.addColorStopRGBA(stop, rr, gg, bb, 0)
+                                prevAlphaZero = true
+                                pendingJ = -1
+                            } else {
+                                // Non-zero: if the previous emitted stop was
+                                // zero and we skipped points since, emit a
+                                // leading anchor at the last skipped position
+                                // so the gradient transitions sharply into
+                                // this run instead of smearing colour across
+                                // the preceding zero zone.
+                                if (prevAlphaZero && pendingJ >= 0) {
+                                    let astop = (pts[pendingJ].x - x0) * invXSpan
+                                    if (astop < 0) astop = 0
+                                    else if (astop > 1) astop = 1
+                                    grad.addColorStopRGBA(astop, 0, 0, 0, 0)
+                                }
+                                let stop = (pts[j].x - x0) * invXSpan
+                                if (stop < 0) stop = 0
+                                else if (stop > 1) stop = 1
+                                grad.addColorStopRGBA(stop, rr, gg, bb, alpha)
+                                prevAlphaZero = false
+                                pendingJ = -1
+                            }
                         }
 
                         // Build continuous path and stroke once
@@ -346,9 +467,26 @@ function BorderOverlay({ connector }: { connector: string }) {
                     }
                 })
 
+                // Throttle redraws to ~15 fps regardless of monitor refresh
+                // rate. The tick callback itself still runs at the frame
+                // clock's natural rate (cheap — just a timestamp compare),
+                // but queue_draw only fires every ~66 ms. This is the main
+                // knob controlling RSS growth: each cairo draw churns ~0.75 MB
+                // of heap through cairo patterns + GSK cairo surface nodes
+                // that dirty glibc arenas faster than the allocator trims them,
+                // and on high-refresh monitors (144 Hz+) add_tick_callback
+                // would otherwise fire 2-4× more often than 60 Hz, multiplying
+                // the leak rate. 15 fps still looks smooth for the 4 s
+                // ping-pong cycle (60 frames per cycle).
+                const DRAW_INTERVAL_MS = 66
+                let lastDrawMs = 0
                 self.add_tick_callback(() => {
                     if (!self.get_mapped()) return true
-                    self.queue_draw()
+                    const nowMs = GLib.get_monotonic_time() / 1000
+                    if (nowMs - lastDrawMs >= DRAW_INTERVAL_MS) {
+                        lastDrawMs = nowMs
+                        self.queue_draw()
+                    }
                     return true
                 })
             }}
@@ -788,6 +926,22 @@ export default function Bars() {
     // it tears down on monitor removal. Not fixable from here — verified by
     // reproducing with a no-op cleanup that never touches the window. Fix
     // path is a GTK4 / Hyprland upgrade via nixpkgs.
+
+    // Periodic explicit GC to reclaim cairo/GSK surface allocations that
+    // otherwise pile up in glibc arenas between SpiderMonkey's natural
+    // collection cycles. SpiderMonkey only triggers GC based on JS-heap
+    // pressure; it can't see the native-heap cost of cairo_pattern_t +
+    // cairo_surface_t instances held by the boxed wrappers in the JS heap,
+    // so without a nudge the BorderOverlay's per-frame cairo churn keeps
+    // these objects alive (ref-wise) much longer than they're visually
+    // needed, and RSS grows faster than the natural collector keeps up.
+    // 10 s cadence at PRIORITY_LOW is slow enough to be invisible to frame
+    // timing and fast enough to keep RSS bounded.
+    GLib.timeout_add(GLib.PRIORITY_LOW, 10000, () => {
+        System.gc()
+        return GLib.SOURCE_CONTINUE
+    })
+
     const monitors = createBinding(app, "monitors")
     return (
         <For

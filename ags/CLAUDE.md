@@ -24,11 +24,13 @@ AGS handles TypeScript compilation internally — there is no separate build ste
 ## Architecture
 
 **Entry point**: `app.tsx`
+
 - Creates the `ryzzen-shell` instance
 - Mounts the two windows (`Bar`, `SidePanel`)
 - Sets up an IPC request handler for external commands
 
 **Widgets** (`widgets/`):
+
 - `Bar.tsx` — Top panel; divided into Left (launcher + tray), Center (workspaces), Right (stats, audio, network, battery, clock, power)
 - `SidePanel.tsx` — Collapsible right panel; contains system header, quick toggles (WiFi, Bluetooth), speaker/mic sliders, sink/source selectors, and per-app mixer
 
@@ -41,6 +43,7 @@ AGS handles TypeScript compilation internally — there is no separate build ste
 **JSX**: GTK4 widgets are expressed in React-style TSX. JSX maps to GObject widgets via the `ags/gtk4` transform. Dynamic CSS classes are applied via binding the `cssClasses` prop.
 
 **System services** accessed via AGS service modules:
+
 - `Hyprland` — workspaces
 - `Wp` (WirePlumber) — audio devices and streams
 - `Network` — WiFi/wired status
@@ -97,6 +100,37 @@ Two mistakes, both landed in repo and caused "ags is not starting" on next sessi
 
 ### Open items
 
-- **Test after next rebuild + Hyprland relogin**: `sudo nixos-rebuild switch --flake ~/NixOS/nix-config`, log out/in. Verify with `systemctl --user status ags` and `journalctl --user -u ags -f`. Unplug/replug should show a SIGABRT then `Started ags.service` ~1 s later. Note that `exec-once` only fires on Hyprland *startup*, not on `hyprctl reload` — a full relogin is required.
+- **Test after next rebuild + Hyprland relogin**: `sudo nixos-rebuild switch --flake ~/NixOS/nix-config`, log out/in. Verify with `systemctl --user status ags` and `journalctl --user -u ags -f`. Unplug/replug should show a SIGABRT then `Started ags.service` ~1 s later. Note that `exec-once` only fires on Hyprland _startup_, not on `hyprctl reload` — a full relogin is required.
 - **Mystery spdlog-format log lines** appearing in `ags run` output. Literal byte match only exists in Waybar binaries, yet `pgrep waybar` was empty. Next step: `strace -f -e trace=execve -o /tmp/ags-trace.log ags run` to catch whoever execs the stray waybar. Unchanged.
 - **Long-term**: if nixpkgs gets a GTK 4.20+ bump, retest without the restart workaround — the `queue destroyed while proxies still attached` warning disappearing is the green light to rely on in-process reactive hotplug and potentially drop the systemd service.
+
+### Manaly added by user because token limit reached
+
+Here is the result of your last task wich was to fix the ram usage of the app, wich you did successfully finished:
+
+● Fixed. RSS is now essentially flat.
+
+t+0s: 171860 KB  
+ t+60s: 172116 KB (+256 KB)  
+ t+120s: 172244 KB (+128 KB)  
+ t+180s: 172372 KB (+128 KB)  
+ t+240s: 172372 KB (+0 KB)  
+ t+300s: 172244 KB (−128 KB) ← actually released
+
+Growth rate dropped from ~30–60 MB/min → ~50 KB/min (a ~600×+ reduction) and even dipped at t+300 s as the periodic GC reclaimed more than the draw loop leaked.
+
+Summary of the fix in widgets/Bar.tsx
+
+1. Geometry cache (Bar.tsx:140-288) — island point lists, arc-length tables, island totals/offsets and x-spans are rebuilt only when widget layout changes, not per frame. Eliminated ~227 Pt  
+   objects/frame/monitor + their arc-length arrays.
+2. Zero-run stop skipping in the gradient build (Bar.tsx:361-456) — consecutive transparent samples collapse to their first/last anchor, so cairo interpolation stays correct but stop-array churn is ~halved  
+   outside the meet-glow window.
+3. 15 fps cap in the tick callback (Bar.tsx:472-488) — timestamp-based throttle inside add_tick_callback, independent of monitor refresh. High-refresh displays (144 Hz+) no longer multiply draw count. The 4
+   s ping-pong cycle still gets 60 frames, visually smooth.
+4. Periodic System.gc() from Bars() (Bar.tsx:808-823) — 10 s cadence at GLib.PRIORITY_LOW. SpiderMonkey's natural GC only fires on JS-heap pressure, so it can't see the native cost of the cairo_pattern_t /
+   cairo_surface_t instances held by their GJS boxed wrappers. The nudge lets those drop, which lets glibc trim arenas.
+
+Real cause of the leak: each cairo draw on a ~2560×40 bar allocates roughly a full cairo surface (~0.75 MB) that only gets freed once the JS wrapper is GC'd. At 60+ Hz × 6 monitors the collector never  
+ catches up and glibc arenas keep getting dirtied. Throttling + explicit GC fixes both sides of that equation.
+
+Animation is still running at 15 fps — let me know if that feels choppy and we can raise the throttle (30 fps should still be fine with the GC hint in place).
