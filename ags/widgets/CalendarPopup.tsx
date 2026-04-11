@@ -1,4 +1,4 @@
-import { Astal, Gtk } from "ags/gtk4"
+import { Astal, Gtk, Gdk } from "ags/gtk4"
 import { createPoll } from "ags/time"
 import { createState, createComputed } from "ags"
 import app from "ags/gtk4/app"
@@ -157,19 +157,20 @@ function UpcomingInfo() {
     )
 }
 
-export default function CalendarPopup(monitor: number) {
+export default function CalendarPopup({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
     const { TOP, RIGHT } = Astal.WindowAnchor
+    const connector = gdkmonitor.get_connector() || "unknown"
 
     return (
         <window
             visible={false}
-            name="calendar-popup"
+            name={`calendar-popup-${connector}`}
             namespace="calendar-popup"
             class="CalendarPopup"
-            monitor={monitor}
+            gdkmonitor={gdkmonitor}
             exclusivity={Astal.Exclusivity.NORMAL}
             layer={Astal.Layer.TOP}
-            keymode={Astal.Keymode.ON_DEMAND}
+            keymode={Astal.Keymode.NONE}
             anchor={TOP | RIGHT}
             application={app}
             marginTop={40}

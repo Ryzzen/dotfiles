@@ -645,8 +645,11 @@ function wsTitleFromClass(cls: string | undefined | null): string {
 
 function Workspaces() {
     const hypr = Hyprland.get_default()
+    // Filter out Hyprland special workspaces (negative ids — scratchpads,
+    // `special:<name>`) so Win+F5 etc. don't render as a giant negative
+    // number in the bar. Regular workspaces start at id 1.
     const workspaces = createBinding(hypr, "workspaces").as((ws) =>
-        [...ws].sort((a, b) => a.id - b.id)
+        ws.filter((w) => w.id > 0).sort((a, b) => a.id - b.id)
     )
     const focusedWs = createBinding(hypr, "focusedWorkspace")
 
@@ -869,7 +872,7 @@ function BatteryIndicator() {
 
 // ── Hardware Stats ──────────────────────────────────────────
 
-function HardwareStats() {
+function HardwareStats({ connector }: { connector: string }) {
     const cpu = createPoll("0", 3000, [
         "bash",
         "-c",
@@ -887,7 +890,7 @@ function HardwareStats() {
     ])
 
     const toggleHw = () => {
-        const win = app.get_window("hw-popup")
+        const win = app.get_window(`hw-popup-${connector}`)
         if (win) win.visible = !win.visible
     }
 
@@ -908,12 +911,12 @@ function HardwareStats() {
 
 // ── Clock ───────────────────────────────────────────────────
 
-function Clock() {
+function Clock({ connector }: { connector: string }) {
     const time = createPoll("", 1000, ["date", "+%H:%M:%S"])
     const date = createPoll("", 5000, ["date", "+%a %Y-%m-%d"])
 
     const toggleCal = () => {
-        const win = app.get_window("calendar-popup")
+        const win = app.get_window(`calendar-popup-${connector}`)
         if (win) win.visible = !win.visible
     }
 
@@ -988,12 +991,12 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                         <box hexpand />
                         <RoundedAngle place="topleft" setup={(s) => { refs.angleR = s }} />
                         <box class="bar-right" $={(s: Gtk.Widget) => { refs.right = s }} spacing={4}>
-                            <HardwareStats />
+                            <HardwareStats connector={connector} />
                             <AudioIndicator />
                             <BluetoothIndicator />
                             <NetworkIndicator />
                             <BatteryIndicator />
-                            <Clock />
+                            <Clock connector={connector} />
                             <PowerButton />
                         </box>
                     </box>

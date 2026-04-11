@@ -1,4 +1,4 @@
-import { Astal, Gtk } from "ags/gtk4"
+import { Astal, Gtk, Gdk } from "ags/gtk4"
 import { createPoll } from "ags/time"
 import app from "ags/gtk4/app"
 
@@ -83,8 +83,9 @@ function NetworkSpeed() {
     )
 }
 
-export default function HwPopup(monitor: number) {
+export default function HwPopup({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
     const { TOP, RIGHT } = Astal.WindowAnchor
+    const connector = gdkmonitor.get_connector() || "unknown"
 
     const cpu = createPoll("0 0", 3000, [
         "bash", "-c",
@@ -118,13 +119,13 @@ export default function HwPopup(monitor: number) {
     return (
         <window
             visible={false}
-            name="hw-popup"
+            name={`hw-popup-${connector}`}
             namespace="hw-popup"
             class="HwPopup"
-            monitor={monitor}
+            gdkmonitor={gdkmonitor}
             exclusivity={Astal.Exclusivity.NORMAL}
             layer={Astal.Layer.TOP}
-            keymode={Astal.Keymode.ON_DEMAND}
+            keymode={Astal.Keymode.NONE}
             anchor={TOP | RIGHT}
             application={app}
             marginTop={40}
