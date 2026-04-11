@@ -177,6 +177,14 @@ function BorderOverlay({ connector }: { connector: string }) {
                     x0s: number[]
                     x1s: number[]
                     invXSpans: number[]
+                    // Frac (along total arc length) of the point on the path
+                    // closest to the visual screen midpoint x=totalW/2. Used
+                    // as the meeting target for the two animated pulses.
+                    // Equals 0.5 only when the path is symmetric around its
+                    // arc midpoint, which is generally not the case here
+                    // because the bar's left and right sections have
+                    // different widget content widths.
+                    midFrac: number
                 } | null = null
 
                 self.set_draw_func((_da, cr, totalW, _totalH) => {
@@ -273,6 +281,40 @@ function BorderOverlay({ connector }: { connector: string }) {
                         const span2 = x1_2 - x0_2
                         const span3 = x1_3 - x0_3
 
+                        // Find the path point closest (in x) to the screen
+                        // visual midpoint, walking all three islands in path
+                        // order. The first crossing wins; for the typical
+                        // layout this lands on island 2's middle horizontal
+                        // line at y=bot, x=totalW/2.
+                        const targetX = totalW * 0.5
+                        let midFrac = 0.5
+                        const islands: Pt[][] = [i1, i2, i3]
+                        const islandLens: number[][] = [l1, l2, l3]
+                        const islandOffs: number[] = [0, total0, total0 + total1]
+                        outer: for (let isle = 0; isle < 3; isle++) {
+                            const pts = islands[isle]
+                            const lens = islandLens[isle]
+                            const off = islandOffs[isle]
+                            for (let k = 1; k < pts.length; k++) {
+                                const a = pts[k - 1], b = pts[k]
+                                const inSeg =
+                                    (a.x <= targetX && targetX <= b.x) ||
+                                    (b.x <= targetX && targetX <= a.x)
+                                if (!inSeg) continue
+                                const dx = b.x - a.x
+                                let arcInIsle: number
+                                if (Math.abs(dx) < 1e-6) {
+                                    arcInIsle = lens[k]
+                                } else {
+                                    const t = (targetX - a.x) / dx
+                                    const segLen = lens[k] - lens[k - 1]
+                                    arcInIsle = lens[k - 1] + t * segLen
+                                }
+                                midFrac = (off + arcInIsle) / grandTotal
+                                break outer
+                            }
+                        }
+
                         cache = {
                             pts: [i1, i2, i3],
                             lens: [l1, l2, l3],
@@ -286,6 +328,7 @@ function BorderOverlay({ connector }: { connector: string }) {
                                 span2 >= 1 ? 1 / span2 : 0,
                                 span3 >= 1 ? 1 / span3 : 0,
                             ],
+                            midFrac,
                         }
                     }
                     if (!cache) return
@@ -299,15 +342,22 @@ function BorderOverlay({ connector }: { connector: string }) {
                     const x1s = cache.x1s
                     const invXSpans = cache.invXSpans
 
-                    // Animation: ping-pong pulses (no discontinuity)
+                    // Animation: ping-pong pulses (no discontinuity).
+                    // animPos sweeps 0 → 0.5 → 0; we remap each side so the
+                    // pulses meet at midFrac (the visual screen midpoint
+                    // along the path) instead of frac=0.5 (the arc-length
+                    // midpoint, which only matches the visual midpoint when
+                    // the bar is symmetric around it).
                     const animPos = getAnimPos()  // 0→0.5→0 smoothly
                     const [pr, pg, pb] = getWalPrimary()
                     const [ar, ag, ab] = getWalAccent2()
 
-                    const leftPos = animPos          // 0 → 0.5 → 0
-                    const rightPos = 1 - animPos     // 1 → 0.5 → 1
+                    const midFrac = cache.midFrac
+                    const sweep = animPos * 2  // 0 → 1 → 0
+                    const leftPos = sweep * midFrac              // 0 → midFrac → 0
+                    const rightPos = 1 - sweep * (1 - midFrac)   // 1 → midFrac → 1
 
-                    // Meeting flash when pulses converge at center
+                    // Meeting flash when pulses converge at the visual midpoint
                     const meetDist = rightPos - leftPos
                     const meetGlow = meetDist < 0.12 ? (1 - meetDist / 0.12) * 0.35 : 0
                     const hasMeet = meetGlow > 0.001
@@ -324,8 +374,8 @@ function BorderOverlay({ connector }: { connector: string }) {
                     const lHi = leftPos + PULSE_W
                     const rLo = rightPos - PULSE_W
                     const rHi = rightPos + TRAIL_LEN
-                    const mLo = 0.5 - MEET_RADIUS
-                    const mHi = 0.5 + MEET_RADIUS
+                    const mLo = midFrac - MEET_RADIUS
+                    const mHi = midFrac + MEET_RADIUS
 
                     const invPulseW = 1 / PULSE_W
                     const invTrailLen = 1 / TRAIL_LEN
@@ -405,9 +455,9 @@ function BorderOverlay({ connector }: { connector: string }) {
                                 const ta = TRAIL_ALPHA * (1 - tf * tf)
                                 if (ta > alpha) { alpha = ta; rr = ar; gg = ag; bb = ab }
                             }
-                            // Meet-glow additive blend
+                            // Meet-glow additive blend (centered on midFrac)
                             if (hasMeet) {
-                                const cDist = frac > 0.5 ? frac - 0.5 : 0.5 - frac
+                                const cDist = frac > midFrac ? frac - midFrac : midFrac - frac
                                 if (cDist < MEET_RADIUS) {
                                     const u = cDist * invMeetRadius
                                     const cg = meetGlow * Math.exp(-u * u * 5)
