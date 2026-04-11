@@ -13,6 +13,11 @@
     transition: all 500ms ease;
 }
 
+@keyframes battery-blink {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.25; }
+}
+
 button {
     background: none;
     border: none;
@@ -93,20 +98,32 @@ window.Bar {
 .ws-button {
     transition: all 200ms;
 
-    &.active .ws-button-label {
+    &.active .ws-button-inner {
         background-color: #{"@primary"};
-        color: #{"@on_primary"};
         border-radius: 1rem;
+
+        .ws-button-label,
+        .ws-button-title { color: #{"@on_primary"}; }
     }
 
-    &:hover:not(.active) .ws-button-label {
+    &:hover:not(.active) .ws-button-inner {
         background-color: #{"@surface_container_high"};
         border-radius: 1rem;
     }
 
-    .ws-button-label {
+    .ws-button-inner {
         min-width: 2rem;
-        padding: 2px 0;
+        padding: 2px 8px;
+        transition: all 200ms;
+    }
+
+    .ws-button-label {
+        transition: all 200ms;
+    }
+
+    .ws-button-title {
+        font-size: 0.7rem;
+        color: #{"@on_surface_variant"};
         transition: all 200ms;
     }
 }
@@ -189,6 +206,10 @@ popover {
         color: #{"@primary"};
     }
 
+    &.bt-connected {
+        color: #{"@tertiary"};
+    }
+
     &.bt-off {
         color: #{"@outline"};
     }
@@ -196,6 +217,7 @@ popover {
     &.battery {
         &.warning { color: #{"@tertiary"}; }
         &.critical { color: #{"@error"}; }
+        &.blink { animation: battery-blink 1s ease-in-out infinite; }
     }
 }
 

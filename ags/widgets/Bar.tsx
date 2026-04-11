@@ -23,8 +23,9 @@ const ICON = {
     VOL_MED:    "\u{f0580}",  // nf-md-volume_medium
     VOL_HIGH:   "\u{f057e}",  // nf-md-volume_high
     // Bluetooth
-    BT_ON:      "\u{f293}",  // nf-fa-bluetooth
-    BT_OFF:     "\u{f294}",  // nf-fa-bluetooth_b
+    BT_ON:        "\u{f293}",   // nf-fa-bluetooth
+    BT_OFF:       "\u{f294}",   // nf-fa-bluetooth_b
+    BT_CONNECTED: "\u{f00b1}",  // nf-md-bluetooth_connect
     // Network
     WIFI:       "\u{f1eb}",  // nf-fa-wifi
     ETH:        "\u{f6ff}",  // nf-md-ethernet
@@ -467,18 +468,19 @@ function BorderOverlay({ connector }: { connector: string }) {
                     }
                 })
 
-                // Throttle redraws to ~15 fps regardless of monitor refresh
+                // Throttle redraws to ~30 fps regardless of monitor refresh
                 // rate. The tick callback itself still runs at the frame
                 // clock's natural rate (cheap — just a timestamp compare),
-                // but queue_draw only fires every ~66 ms. This is the main
+                // but queue_draw only fires every ~33 ms. This is the main
                 // knob controlling RSS growth: each cairo draw churns ~0.75 MB
                 // of heap through cairo patterns + GSK cairo surface nodes
                 // that dirty glibc arenas faster than the allocator trims them,
                 // and on high-refresh monitors (144 Hz+) add_tick_callback
                 // would otherwise fire 2-4× more often than 60 Hz, multiplying
-                // the leak rate. 15 fps still looks smooth for the 4 s
-                // ping-pong cycle (60 frames per cycle).
-                const DRAW_INTERVAL_MS = 66
+                // the leak rate. 30 fps still looks smooth for the 4 s
+                // ping-pong cycle (120 frames per cycle) and the periodic
+                // System.gc() nudge keeps RSS bounded.
+                const DRAW_INTERVAL_MS = 33
                 let lastDrawMs = 0
                 self.add_tick_callback(() => {
                     if (!self.get_mapped()) return true
@@ -579,9 +581,23 @@ function QuickLinks() {
 
 // ── Workspaces ──────────────────────────────────────────────
 
+// Normalize a wmclass like "org.mozilla.firefox" / "Com.Spotify.Client"
+// to a short human label ("firefox", "spotify"). Truncated to 5 chars,
+// with an ellipsis glyph appended when clipped. Returns "" for empty.
+const WS_TITLE_MAX = 5
+function wsTitleFromClass(cls: string | undefined | null): string {
+    if (!cls) return ""
+    const last = (cls.split(".").pop() ?? cls).toLowerCase()
+    return last.length > WS_TITLE_MAX
+        ? last.slice(0, WS_TITLE_MAX) + "…"
+        : last
+}
+
 function Workspaces() {
     const hypr = Hyprland.get_default()
-    const workspaces = createBinding(hypr, "workspaces")
+    const workspaces = createBinding(hypr, "workspaces").as((ws) =>
+        [...ws].sort((a, b) => a.id - b.id)
+    )
     const focusedWs = createBinding(hypr, "focusedWorkspace")
 
     return (
@@ -592,9 +608,24 @@ function Workspaces() {
                     const cssClasses = isFocused((f) =>
                         f ? ["ws-button", "active"] : ["ws-button"]
                     )
+                    // Reactive label based on the workspace's last (most
+                    // recently focused) client. AstalHyprland updates
+                    // `lastClient` as the user switches windows inside the
+                    // workspace, so this tracks "what's on top" live.
+                    const title = createBinding(ws, "lastClient").as((c) =>
+                        wsTitleFromClass(c?.class)
+                    )
+                    const titleVisible = title.as((t) => t.length > 0)
                     return (
                         <button cssClasses={cssClasses} onClicked={() => ws.focus()}>
-                            <label class="ws-button-label" label={String(ws.id)} />
+                            <box class="ws-button-inner" spacing={4}>
+                                <label class="ws-button-label" label={String(ws.id)} />
+                                <label
+                                    class="ws-button-title"
+                                    label={title}
+                                    visible={titleVisible}
+                                />
+                            </box>
                         </button>
                     )
                 }}
@@ -700,10 +731,17 @@ function AudioIndicator() {
 function BluetoothIndicator() {
     const bt = Bluetooth.get_default()
     const powered = createBinding(bt, "isPowered")
-    const cssClasses = powered((p) =>
-        p ? ["bar-indicator", "bt-on"] : ["bar-indicator", "bt-off"]
-    )
-    const icon = powered((p) => (p ? ICON.BT_ON : ICON.BT_OFF))
+    const connected = createBinding(bt, "isConnected")
+    const cssClasses = createComputed(() => {
+        if (!powered()) return ["bar-indicator", "bt-off"]
+        if (connected()) return ["bar-indicator", "bt-connected"]
+        return ["bar-indicator", "bt-on"]
+    })
+    const icon = createComputed(() => {
+        if (!powered()) return ICON.BT_OFF
+        if (connected()) return ICON.BT_CONNECTED
+        return ICON.BT_ON
+    })
 
     return (
         <button
@@ -760,10 +798,13 @@ function BatteryIndicator() {
     const pctLabel = percentage((p) => ` ${Math.round(p * 100)}%`)
     const chargingIcon = charging((c) => (c ? `${ICON.CHARGING} ` : ""))
 
-    const cssClasses = percentage((p) => {
+    const cssClasses = createComputed(() => {
+        const p = percentage()
         const cls = ["bar-indicator", "battery"]
-        if (p < 0.15) cls.push("critical")
-        else if (p < 0.3) cls.push("warning")
+        if (p < 0.15) {
+            cls.push("critical")
+            if (!charging()) cls.push("blink")
+        } else if (p < 0.3) cls.push("warning")
         return cls
     })
 
