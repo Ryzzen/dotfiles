@@ -24,15 +24,38 @@ const ICON = {
     RIGHT: "\u{f054}",   // fa-chevron_right
 }
 
+// ── Shared polls (one instance, reused across all per-monitor popups) ──
+
+const pollToday = createPoll("", 60000, () => {
+    const d = new Date()
+    return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+})
+const pollCalTime = createPoll("", 1000, () => {
+    const now = new Date()
+    return now.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+    })
+})
+const pollCalDate = createPoll("", 60000, () => {
+    const now = new Date()
+    return now.toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    })
+})
+const pollUptime = createPoll("", 30000, ["bash", "-c",
+    "uptime -p | sed 's/up //'",
+])
+
 function CalendarGrid() {
     const now = new Date()
     const [year, setYear] = createState(now.getFullYear())
     const [month, setMonth] = createState(now.getMonth())
-
-    const today = createPoll("", 60000, () => {
-        const d = new Date()
-        return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
-    })
 
     const prev = () => {
         if (month() === 0) {
@@ -63,7 +86,7 @@ function CalendarGrid() {
     const grid = createComputed(() => {
         const m = month()
         const y = year()
-        const todayStr = today()
+        const todayStr = pollToday()
         const [tY, tM, tD] = todayStr.split("-").map(Number)
         const days = daysInMonth(y, m)
         const start = firstDayOfMonth(y, m)
@@ -124,35 +147,11 @@ function CalendarGrid() {
 }
 
 function UpcomingInfo() {
-    const uptime = createPoll("", 30000, ["bash", "-c",
-        "uptime -p | sed 's/up //'",
-    ])
-
-    const time = createPoll("", 1000, () => {
-        const now = new Date()
-        return now.toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-            hour12: false,
-        })
-    })
-
-    const dateStr = createPoll("", 60000, () => {
-        const now = new Date()
-        return now.toLocaleDateString("en-US", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-        })
-    })
-
     return (
         <box class="cal-info" orientation={Gtk.Orientation.VERTICAL} spacing={4}>
-            <label class="cal-time" label={time} halign={Gtk.Align.CENTER} />
-            <label class="cal-date-full" label={dateStr} halign={Gtk.Align.CENTER} />
-            <label class="cal-uptime" label={uptime((u) => `uptime: ${u}`)} halign={Gtk.Align.CENTER} />
+            <label class="cal-time" label={pollCalTime} halign={Gtk.Align.CENTER} />
+            <label class="cal-date-full" label={pollCalDate} halign={Gtk.Align.CENTER} />
+            <label class="cal-uptime" label={pollUptime((u) => `uptime: ${u}`)} halign={Gtk.Align.CENTER} />
         </box>
     )
 }
