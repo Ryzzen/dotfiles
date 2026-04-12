@@ -12,6 +12,7 @@ import Network from "gi://AstalNetwork"
 import Battery from "gi://AstalBattery"
 import Bluetooth from "gi://AstalBluetooth"
 import Tray from "gi://AstalTray"
+import cairo from "cairo"
 import { getWalSurface, getWalPrimary, getWalAccent2 } from "../walColors"
 
 // Nerd Font icon constants (CaskaydiaCove Nerd Font codepoints)
@@ -142,9 +143,10 @@ function BorderOverlay({ connector }: { connector: string }) {
                 // Geometry (island point lists and arc-length tables) only
                 // changes when the bar's layout changes — essentially never
                 // during steady-state animation. We cache it so the per-frame
-                // draw path does zero allocation for geometry. The draw loop
-                // uses per-segment setSourceRGBA instead of LinearGradient
-                // patterns, eliminating all per-frame native heap allocations.
+                // draw path does zero JS allocation for geometry; the only
+                // unavoidable native allocations per frame are the three
+                // cairo.LinearGradient patterns (and their stops), which is
+                // the cost of keeping gradient-based rendering.
                 //
                 // Before this cache existed, every frame rebuilt ~227 `Pt`
                 // objects + ~227 arc-length numbers × every monitor × 60fps,
@@ -172,6 +174,9 @@ function BorderOverlay({ connector }: { connector: string }) {
                     totals: number[]
                     offsets: number[]
                     invGrandTotal: number
+                    x0s: number[]
+                    x1s: number[]
+                    invXSpans: number[]
                     // Frac (along total arc length) of the point on the path
                     // closest to the visual screen midpoint x=totalW/2. Used
                     // as the meeting target for the two animated pulses.
@@ -269,6 +274,13 @@ function BorderOverlay({ connector }: { connector: string }) {
                         const grandTotal = total0 + total1 + total2
                         if (grandTotal <= 0) { cache = null; return }
 
+                        const x0_1 = i1[0].x, x1_1 = i1[i1.length - 1].x
+                        const x0_2 = i2[0].x, x1_2 = i2[i2.length - 1].x
+                        const x0_3 = i3[0].x, x1_3 = i3[i3.length - 1].x
+                        const span1 = x1_1 - x0_1
+                        const span2 = x1_2 - x0_2
+                        const span3 = x1_3 - x0_3
+
                         // Find the path point closest (in x) to the screen
                         // visual midpoint, walking all three islands in path
                         // order. The first crossing wins; for the typical
@@ -309,6 +321,13 @@ function BorderOverlay({ connector }: { connector: string }) {
                             totals: [total0, total1, total2],
                             offsets: [0, total0, total0 + total1],
                             invGrandTotal: 1 / grandTotal,
+                            x0s: [x0_1, x0_2, x0_3],
+                            x1s: [x1_1, x1_2, x1_3],
+                            invXSpans: [
+                                span1 >= 1 ? 1 / span1 : 0,
+                                span2 >= 1 ? 1 / span2 : 0,
+                                span3 >= 1 ? 1 / span3 : 0,
+                            ],
                             midFrac,
                         }
                     }
@@ -319,6 +338,9 @@ function BorderOverlay({ connector }: { connector: string }) {
                     const islandTotals = cache.totals
                     const islandOffsets = cache.offsets
                     const invGrandTotal = cache.invGrandTotal
+                    const x0s = cache.x0s
+                    const x1s = cache.x1s
+                    const invXSpans = cache.invXSpans
 
                     // Animation: ping-pong pulses (no discontinuity).
                     // animPos sweeps 0 → 0.5 → 0; we remap each side so the
@@ -363,11 +385,7 @@ function BorderOverlay({ connector }: { connector: string }) {
                     cr.setLineCap(1)  // ROUND
                     cr.setLineJoin(1) // ROUND
 
-                    // Draw each island as per-segment colored strokes.
-                    // This eliminates all per-frame native heap allocations
-                    // (no new cairo.LinearGradient + addColorStopRGBA churn).
-                    // Segments are ~2-4px long, so flat color per segment is
-                    // visually identical to a smooth gradient at this resolution.
+                    // Draw each island as one continuous path with a gradient
                     for (let isle = 0; isle < 3; isle++) {
                         const isleTotal = islandTotals[isle]
                         if (isleTotal <= 0) continue
@@ -387,10 +405,28 @@ function BorderOverlay({ connector }: { connector: string }) {
                         const n = pts.length
                         if (n < 2) continue
 
-                        for (let j = 1; j < n; j++) {
-                            // Sample color at segment midpoint
-                            const frac = (offset + (lens[j - 1] + lens[j]) * 0.5) * invGrandTotal
+                        const invXSpan = invXSpans[isle]
+                        if (invXSpan === 0) continue
+                        const x0 = x0s[isle]
+                        const x1 = x1s[isle]
 
+                        // Build gradient with color stops, skipping runs of
+                        // consecutive zeros. Within a zero run we emit only
+                        // the first and last stop, which anchors the boundary
+                        // so cairo still interpolates correctly into/out of
+                        // adjacent non-zero bands. Outside the meet-glow window
+                        // (when most of each island is zero) this roughly
+                        // halves the number of addColorStopRGBA calls and the
+                        // cairo-internal stop-array growth driving native RSS.
+                        const grad = new cairo.LinearGradient(x0, 0, x1, 0)
+                        let prevAlphaZero = false  // last EMITTED stop had alpha 0
+                        let pendingJ = -1          // index of last skipped zero
+
+                        for (let j = 0; j < n; j++) {
+                            const frac = (offset + lens[j]) * invGrandTotal
+
+                            // Inlined colorAt — avoids function-call overhead and
+                            // the per-sample [r,g,b,a] array allocation.
                             let alpha = 0, rr = 0, gg = 0, bb = 0
 
                             // Left pulse head
@@ -400,7 +436,7 @@ function BorderOverlay({ connector }: { connector: string }) {
                                 const lGlow = Math.exp(-u * u * 5) * 0.9
                                 if (lGlow > alpha) { alpha = lGlow; rr = pr; gg = pg; bb = pb }
                             }
-                            // Left trail
+                            // Left trail (quadratic falloff behind pulse)
                             if (frac < leftPos && frac > leftPos - TRAIL_LEN) {
                                 const tf = (leftPos - frac) * invTrailLen
                                 const ta = TRAIL_ALPHA * (1 - tf * tf)
@@ -419,7 +455,7 @@ function BorderOverlay({ connector }: { connector: string }) {
                                 const ta = TRAIL_ALPHA * (1 - tf * tf)
                                 if (ta > alpha) { alpha = ta; rr = ar; gg = ag; bb = ab }
                             }
-                            // Meet-glow additive blend
+                            // Meet-glow additive blend (centered on midFrac)
                             if (hasMeet) {
                                 const cDist = frac > midFrac ? frac - midFrac : midFrac - frac
                                 if (cDist < MEET_RADIUS) {
@@ -436,20 +472,64 @@ function BorderOverlay({ connector }: { connector: string }) {
                                 }
                             }
 
-                            if (alpha < 0.001) continue
-
-                            cr.setSourceRGBA(rr, gg, bb, alpha)
-                            cr.moveTo(pts[j - 1].x, pts[j - 1].y)
-                            cr.lineTo(pts[j].x, pts[j].y)
-                            cr.stroke()
+                            if (alpha === 0) {
+                                if (prevAlphaZero) {
+                                    // Mid-zero-run: remember as potential trail anchor.
+                                    pendingJ = j
+                                    continue
+                                }
+                                // First zero after a non-zero run — emit as trail anchor.
+                                let stop = (pts[j].x - x0) * invXSpan
+                                if (stop < 0) stop = 0
+                                else if (stop > 1) stop = 1
+                                grad.addColorStopRGBA(stop, rr, gg, bb, 0)
+                                prevAlphaZero = true
+                                pendingJ = -1
+                            } else {
+                                // Non-zero: if the previous emitted stop was
+                                // zero and we skipped points since, emit a
+                                // leading anchor at the last skipped position
+                                // so the gradient transitions sharply into
+                                // this run instead of smearing colour across
+                                // the preceding zero zone.
+                                if (prevAlphaZero && pendingJ >= 0) {
+                                    let astop = (pts[pendingJ].x - x0) * invXSpan
+                                    if (astop < 0) astop = 0
+                                    else if (astop > 1) astop = 1
+                                    grad.addColorStopRGBA(astop, 0, 0, 0, 0)
+                                }
+                                let stop = (pts[j].x - x0) * invXSpan
+                                if (stop < 0) stop = 0
+                                else if (stop > 1) stop = 1
+                                grad.addColorStopRGBA(stop, rr, gg, bb, alpha)
+                                prevAlphaZero = false
+                                pendingJ = -1
+                            }
                         }
+
+                        // Build continuous path and stroke once
+                        cr.newPath()
+                        cr.moveTo(pts[0].x, pts[0].y)
+                        for (let j = 1; j < n; j++) {
+                            cr.lineTo(pts[j].x, pts[j].y)
+                        }
+                        cr.setSource(grad)
+                        cr.stroke()
                     }
                 })
 
                 // Throttle redraws to ~30 fps regardless of monitor refresh
-                // rate. On high-refresh monitors (144 Hz+) add_tick_callback
-                // would otherwise fire 2-4× more often, multiplying draw
-                // calls needlessly. 30 fps is smooth for the 4 s ping-pong.
+                // rate. The tick callback itself still runs at the frame
+                // clock's natural rate (cheap — just a timestamp compare),
+                // but queue_draw only fires every ~33 ms. This is the main
+                // knob controlling RSS growth: each cairo draw churns ~0.75 MB
+                // of heap through cairo patterns + GSK cairo surface nodes
+                // that dirty glibc arenas faster than the allocator trims them,
+                // and on high-refresh monitors (144 Hz+) add_tick_callback
+                // would otherwise fire 2-4× more often than 60 Hz, multiplying
+                // the leak rate. 30 fps still looks smooth for the 4 s
+                // ping-pong cycle (120 frames per cycle) and the periodic
+                // System.gc() nudge keeps RSS bounded.
                 const DRAW_INTERVAL_MS = 33
                 let lastDrawMs = 0
                 self.add_tick_callback(() => {
@@ -790,26 +870,24 @@ function BatteryIndicator() {
     )
 }
 
-// ── Shared polls (one instance, reused across all per-monitor bars) ──
-
-const pollCpu = createPoll("0", 3000, [
-    "bash", "-c",
-    "top -bn1 | grep 'Cpu(s)' | awk '{print int($2+$4)}'",
-])
-const pollMem = createPoll("0", 5000, [
-    "bash", "-c",
-    "free | awk '/Mem:/{print int($3/$2*100)}'",
-])
-const pollDisk = createPoll("0", 30000, [
-    "bash", "-c",
-    "df / | awk 'NR==2{print int($5)}'",
-])
-const pollTime = createPoll("", 1000, ["date", "+%H:%M:%S"])
-const pollDate = createPoll("", 5000, ["date", "+%a %Y-%m-%d"])
-
 // ── Hardware Stats ──────────────────────────────────────────
 
 function HardwareStats({ connector }: { connector: string }) {
+    const cpu = createPoll("0", 3000, [
+        "bash",
+        "-c",
+        "top -bn1 | grep 'Cpu(s)' | awk '{print int($2+$4)}'",
+    ])
+    const mem = createPoll("0", 5000, [
+        "bash",
+        "-c",
+        "free | awk '/Mem:/{print int($3/$2*100)}'",
+    ])
+    const disk = createPoll("0", 30000, [
+        "bash",
+        "-c",
+        "df / | awk 'NR==2{print int($5)}'",
+    ])
 
     const toggleHw = () => {
         const win = app.get_window(`hw-popup-${connector}`)
@@ -819,13 +897,13 @@ function HardwareStats({ connector }: { connector: string }) {
     return (
         <box class="hw-stats" spacing={8}>
             <button onClicked={toggleHw}>
-                <label label={pollCpu((c) => `${ICON.CPU} ${c}%`)} />
+                <label label={cpu((c) => `${ICON.CPU} ${c}%`)} />
             </button>
             <button onClicked={toggleHw}>
-                <label label={pollMem((m) => `${ICON.MEM} ${m}%`)} />
+                <label label={mem((m) => `${ICON.MEM} ${m}%`)} />
             </button>
             <button onClicked={toggleHw}>
-                <label label={pollDisk((d) => `${ICON.DISK} ${d}%`)} />
+                <label label={disk((d) => `${ICON.DISK} ${d}%`)} />
             </button>
         </box>
     )
@@ -834,6 +912,9 @@ function HardwareStats({ connector }: { connector: string }) {
 // ── Clock ───────────────────────────────────────────────────
 
 function Clock({ connector }: { connector: string }) {
+    const time = createPoll("", 1000, ["date", "+%H:%M:%S"])
+    const date = createPoll("", 5000, ["date", "+%a %Y-%m-%d"])
+
     const toggleCal = () => {
         const win = app.get_window(`calendar-popup-${connector}`)
         if (win) win.visible = !win.visible
@@ -842,8 +923,8 @@ function Clock({ connector }: { connector: string }) {
     return (
         <button class="clock-container" onClicked={toggleCal}>
             <box orientation={Gtk.Orientation.VERTICAL}>
-                <label class="clock-date" label={pollDate} halign={Gtk.Align.END} />
-                <label class="clock-time" label={pollTime} halign={Gtk.Align.END} />
+                <label class="clock-date" label={date} halign={Gtk.Align.END} />
+                <label class="clock-time" label={time} halign={Gtk.Align.END} />
             </box>
         </button>
     )
