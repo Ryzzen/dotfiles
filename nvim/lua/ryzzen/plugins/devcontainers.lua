@@ -1,12 +1,15 @@
 return {
 	"jedrzejboczar/devcontainers.nvim",
 	dependencies = {
-		"miversen33/netman.nvim",
-		"stevearc/overseer.nvim",
+		"netman.nvim",
+		"overseer.nvim",
 	},
-	opts = {
-		log = {
-			level = "debug",
-		},
-	},
+	config = function()
+		require("devcontainers").setup({
+			devcontainers_cli_cmd = "devcontainer",
+			log = {
+				level = "debug",
+			},
+		})
+	end,
 }
