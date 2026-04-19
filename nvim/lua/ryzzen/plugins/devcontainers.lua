@@ -1,8 +1,8 @@
 return {
 	"jedrzejboczar/devcontainers.nvim",
 	dependencies = {
-		"netman.nvim",
-		"overseer.nvim",
+		"miversen33/netman.nvim",
+		"stevearc/overseer.nvim",
 	},
 	config = function()
 		require("devcontainers").setup({
