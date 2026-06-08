@@ -20,4 +20,4 @@ local types = require("luasnip.util.types")
 local conds = require("luasnip.extras.conditions")
 local conds_expand = require("luasnip.extras.conditions.expand")
 
-ls.add_snippets("c", { s("bp", t("__BKPT();")) })
+ls.add_snippets("c", { s("breakpoint", t("__BKPT();")) })

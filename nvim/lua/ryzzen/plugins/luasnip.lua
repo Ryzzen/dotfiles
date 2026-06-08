@@ -7,12 +7,12 @@ return {
 		{
 			"rafamadriz/friendly-snippets",
 			config = function()
-				require("luasnip.loaders.from_vscode").lazy_load()
+				require("luasnip.loaders.from_vscode").load()
 				require("luasnip.loaders.from_lua").load()
 
 				local ls = require("luasnip")
-				-- Register once for both C and C++
-				ls.filetype_set("cpp", { "c" })
+				-- Share C snippets with C++ buffers
+				ls.filetype_extend("cpp", { "c" })
 
 				-- Keymaps
 				vim.keymap.set({ "i", "s" }, "<Tab>", function()
