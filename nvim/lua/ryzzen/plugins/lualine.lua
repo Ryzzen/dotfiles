@@ -1,13 +1,11 @@
 return {
 	"nvim-lualine/lualine.nvim",
-	dependencies = { "sainnhe/everforest", "maxi0604/music.nvim" },
+	dependencies = { "maxi0604/music.nvim" },
 	config = function()
-		local everforest = require("lualine.themes.everforest")
-
 		require("music").setup({})
 
 		require("lualine").setup({
-			options = { theme = everforest },
+			options = { theme = "auto" },
 			sections = {
 				lualine_a = { "mode" },
 				lualine_b = { "filename", "filesize" },
