@@ -1,7 +1,7 @@
 return {
 	"floating-man",
 	dev = true, -- Set this to `true` if you are developing the plugin locally
-	dir = "/home/ryzzen/NixOS/dotfiles/nvim/lua/ryzzen/plugins/dev/floating-man/",
+	dir = vim.fn.stdpath("config") .. "/lua/ryzzen/plugins/dev/floating-man",
 	config = function()
 		-- Keymaps
 		local keymap = vim.keymap
