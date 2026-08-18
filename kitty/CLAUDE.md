@@ -8,13 +8,17 @@ This directory holds a single file — `kitty.conf`, the user's kitty terminal c
 
 ## Reloading config
 
-Remote control is enabled and kitty listens on a fixed socket (`listen_on unix:/tmp/mykitty`), so the running terminal can be told to reload after edits without restarting:
+Remote control is enabled and kitty listens on a unix socket (`listen_on unix:/tmp/mykitty`), so the running terminal can be told to reload after edits without restarting.
+
+**kitty appends its PID to that path** — the actual socket is `/tmp/mykitty-<pid>`, one per instance, and `--to=unix:/tmp/mykitty` matches nothing. Iterate instead:
 
 ```
-kitty @ --to=unix:/tmp/mykitty load-config
+for sock in /tmp/mykitty-*; do kitty @ --to="unix:$sock" load-config; done
 ```
 
-The socket path is the load-bearing detail — other kitty tooling (e.g. `kitten @ ...`) should target the same socket.
+Reloading is what makes a config change reach **new tabs**: kitty parses `kitty.conf` once at start, so an existing instance keeps handing its stale in-memory palette to tabs it opens later, even after `~/.cache/wal/colors-kitty.conf` changes on disk. `../ressources/scripts/change_wallpaper.sh` does this reload after every `wal` run for exactly that reason.
+
+Signalling by process name is not a workable alternative here — on NixOS the process is `.kitty-wrapped`, so `pkill -x kitty` misses it.
 
 ## Color scheme is externally generated
 
