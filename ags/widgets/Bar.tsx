@@ -50,6 +50,19 @@ const ICON = {
     POWER:      "\u{f011}",  // nf-fa-power_off
 }
 
+// ── Layout ─────────────────────────────────────────────────
+
+// Logical width below which the bar switches to its compact layout. The
+// desktop layout is built for a ~2560-wide panel; on the 1200x800 logical
+// surface of a fractionally-scaled tablet the right section overruns the
+// screen edge and the clock + power button fall off it entirely. 1500 sits
+// above every small panel we have and below the 1920 logical laptops, which
+// still fit the full layout.
+//
+// This is a code-side check on purpose: GTK4 CSS has no @media query, so the
+// breakpoint cannot live in the stylesheet.
+const COMPACT_MAX_WIDTH = 1500
+
 // ── Animated border ────────────────────────────────────────
 
 const ANIM_PERIOD = 4.0   // seconds for full ping-pong cycle
@@ -643,7 +656,7 @@ function wsTitleFromClass(cls: string | undefined | null): string {
         : last
 }
 
-function Workspaces() {
+function Workspaces({ compact }: { compact: boolean }) {
     const hypr = Hyprland.get_default()
     // Filter out Hyprland special workspaces (negative ids — scratchpads,
     // `special:<name>`) so Win+F5 etc. don't render as a giant negative
@@ -668,7 +681,14 @@ function Workspaces() {
                     const title = createBinding(ws, "lastClient").as((c) =>
                         wsTitleFromClass(c?.class)
                     )
-                    const titleVisible = title.as((t) => t.length > 0)
+                    // The app-name half of each pill is the single biggest
+                    // consumer of width in the centre section - four open
+                    // workspaces spend ~200px on it. Numbers alone still say
+                    // which workspace is focused, so drop the names when the
+                    // panel cannot afford them.
+                    const titleVisible = compact
+                        ? title.as(() => false)
+                        : title.as((t) => t.length > 0)
                     return (
                         <button cssClasses={cssClasses} onClicked={() => ws.focus()}>
                             <box class="ws-button-inner" spacing={4}>
@@ -689,7 +709,7 @@ function Workspaces() {
 
 // ── Focused Title ────────────────────────────────────────────
 
-function FocusedTitle() {
+function FocusedTitle({ compact }: { compact: boolean }) {
     const hypr = Hyprland.get_default()
     const client = createBinding(hypr, "focusedClient")
 
@@ -702,14 +722,14 @@ function FocusedTitle() {
                 class="title-class"
                 label={wmClass}
                 halign={Gtk.Align.END}
-                maxWidthChars={22}
+                maxWidthChars={compact ? 12 : 22}
                 ellipsize={3}
             />
             <label
                 class="title-title"
                 label={title}
                 halign={Gtk.Align.END}
-                maxWidthChars={22}
+                maxWidthChars={compact ? 12 : 22}
                 ellipsize={3}
             />
         </box>
@@ -911,7 +931,7 @@ function HardwareStats({ connector }: { connector: string }) {
 
 // ── Clock ───────────────────────────────────────────────────
 
-function Clock({ connector }: { connector: string }) {
+function Clock({ connector, compact }: { connector: string; compact: boolean }) {
     const time = createPoll("", 1000, ["date", "+%H:%M:%S"])
     const date = createPoll("", 5000, ["date", "+%a %Y-%m-%d"])
 
@@ -922,8 +942,23 @@ function Clock({ connector }: { connector: string }) {
 
     return (
         <button class="clock-container" onClicked={toggleCal}>
-            <box orientation={Gtk.Orientation.VERTICAL}>
-                <label class="clock-date" label={date} halign={Gtk.Align.END} />
+            <box
+                orientation={Gtk.Orientation.VERTICAL}
+                valign={compact ? Gtk.Align.CENTER : Gtk.Align.FILL}
+            >
+                {/* The date line is the widest thing in the right section
+                    ("%a %Y-%m-%d" is ~15 chars against the time's 8), and it is
+                    the first casualty when the section overflows. Drop it on a
+                    narrow panel and keep the time. `visible` rather than an
+                    unrendered child: GTK does not allocate invisible widgets,
+                    so this actually reclaims the width, and GTK4 CSS has no
+                    `display: none` to do it from the stylesheet. */}
+                <label
+                    class="clock-date"
+                    label={date}
+                    halign={Gtk.Align.END}
+                    visible={!compact}
+                />
                 <label class="clock-time" label={time} halign={Gtk.Align.END} />
             </box>
         </button>
@@ -945,6 +980,14 @@ function PowerButton() {
 function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
     const { TOP, LEFT, RIGHT } = Astal.WindowAnchor
     const connector = gdkmonitor.get_connector() || "unknown"
+
+    // Gdk hands us LOGICAL geometry, which is what we want: a 1920x1280 panel at
+    // scale 1.6 is a 1200x800 surface to lay out on, and 1200 is the number the
+    // widgets actually have to fit into. Guard the call so a monitor that reports
+    // nothing falls back to the full layout rather than compacting every bar.
+    const monWidth = gdkmonitor.get_geometry?.()?.width ?? 0
+    const compact = monWidth > 0 && monWidth < COMPACT_MAX_WIDTH
+
     const refs: BarRefs = {
         left: null,
         right: null,
@@ -961,6 +1004,7 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
             name={`bar-${connector}`}
             namespace="bar"
             class="Bar"
+            $={(self: Gtk.Widget) => { if (compact) self.add_css_class("compact") }}
             gdkmonitor={gdkmonitor}
             exclusivity={Astal.Exclusivity.EXCLUSIVE}
             anchor={TOP | LEFT | RIGHT}
@@ -970,11 +1014,11 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                 <centerbox class="bar-inner">
                     {/* ── Left: appmenu + quicklinks + tray + title + angle ── */}
                     <box $type="start">
-                        <box class="bar-left" $={(s: Gtk.Widget) => { refs.left = s }} spacing={4}>
+                        <box class="bar-left" $={(s: Gtk.Widget) => { refs.left = s }} spacing={compact ? 2 : 4}>
                             <AppMenuButton />
                             <QuickLinks />
                             <SysTray />
-                            <FocusedTitle />
+                            <FocusedTitle compact={compact} />
                         </box>
                         <RoundedAngle place="topright" setup={(s) => { refs.angleL = s }} />
                     </box>
@@ -982,7 +1026,7 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                     {/* ── Center: workspaces ── */}
                     <box $type="center">
                         <RoundedAngle place="topleft" setup={(s) => { refs.angleCL = s }} />
-                        <Workspaces />
+                        <Workspaces compact={compact} />
                         <RoundedAngle place="topright" setup={(s) => { refs.angleCR = s }} />
                     </box>
 
@@ -990,13 +1034,13 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                     <box $type="end">
                         <box hexpand />
                         <RoundedAngle place="topleft" setup={(s) => { refs.angleR = s }} />
-                        <box class="bar-right" $={(s: Gtk.Widget) => { refs.right = s }} spacing={4}>
+                        <box class="bar-right" $={(s: Gtk.Widget) => { refs.right = s }} spacing={compact ? 2 : 4}>
                             <HardwareStats connector={connector} />
                             <AudioIndicator />
                             <BluetoothIndicator />
                             <NetworkIndicator />
                             <BatteryIndicator />
-                            <Clock connector={connector} />
+                            <Clock connector={connector} compact={compact} />
                             <PowerButton />
                         </box>
                     </box>

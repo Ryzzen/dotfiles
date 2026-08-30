@@ -256,6 +256,40 @@ popover {
     }
 }
 
+// ── Compact Bar ─────────────────────────────────────────────
+//
+// Applied by Bar.tsx when the monitor is narrower than COMPACT_MAX_WIDTH.
+// The breakpoint has to be decided in code because GTK4 CSS has no @media
+// query, and anything that needs a widget to disappear has to be done there
+// too - GTK4 CSS has no `display: none`, so the clock's date line is dropped
+// with `visible` instead. What is left for the stylesheet is the metrics.
+//
+// The floors are the point. `.title-box`'s 10rem min-width and the section
+// paddings are what made the right side overrun a 1200-wide panel and push
+// the clock and power button off the screen edge; shrinking the type alone
+// would not have reclaimed that.
+.Bar.compact {
+    .title-box {
+        min-width: 6rem;
+        padding-left: 4px;
+
+        .title-class,
+        .title-title { font-size: 0.55rem; }
+    }
+
+    .bar-right { padding: 0 2px; }
+
+    .hw-stats { font-size: 0.62rem; }
+
+    .clock-container {
+        padding-right: 4px;
+
+        .clock-time { font-size: 0.62rem; }
+    }
+
+    .power-btn { padding: 0 3px; }
+}
+
 // ═══════════════════════════════════════════════════════════
 //   SIDE PANEL
 // ═══════════════════════════════════════════════════════════
