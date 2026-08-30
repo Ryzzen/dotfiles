@@ -335,6 +335,76 @@ popover {
 }
 
 // ═══════════════════════════════════════════════════════════
+//   BLUETOOTH POPUP
+// ═══════════════════════════════════════════════════════════
+
+.BtPopup { background: transparent; }
+
+.bt-box {
+    background-color: #{"@surface"};
+    border: 1px solid #{"@outline_variant"};
+    border-radius: 12px;
+    padding: 12px;
+    min-width: 21rem;
+}
+
+.bt-title { color: #{"@on_surface"}; font-size: 0.75rem; }
+
+.bt-refresh {
+    background-color: #{"@surface_container_high"};
+    color: #{"@on_surface"};
+    border-radius: 8px;
+    min-width: 1.8rem;
+    min-height: 1.8rem;
+
+    &:hover { @include hover-wash; }
+}
+
+.bt-switch {
+    background-color: #{"@surface_container_high"};
+    border-radius: 12px;
+
+    &:checked { background-color: #{"@primary"}; }
+
+    > slider {
+        background-color: #{"@on_surface"};
+        border-radius: 50%;
+        min-width: 1rem;
+        min-height: 1rem;
+    }
+}
+
+// Accent means connected, and nothing else - same rule as the wifi list.
+.bt-dev {
+    background-color: #{"@surface_container_high"};
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: #{"@on_surface"};
+
+    &:hover { @include hover-wash; }
+    &:focus { outline-style: none; }
+
+    &.active {
+        background-color: #{"@primary"};
+        color: #{"@on_primary"};
+    }
+}
+
+.bt-dev-name { font-size: 0.7rem; }
+.bt-dev-icon { font-size: 0.8rem; }
+
+.bt-dev-batt,
+.bt-dev-state {
+    color: #{"@on_surface_variant"};
+    font-size: 0.6rem;
+}
+
+.bt-dev.active .bt-dev-batt,
+.bt-dev.active .bt-dev-state {
+    color: #{"@on_primary"};
+}
+
+// ═══════════════════════════════════════════════════════════
 //   WIFI POPUP
 // ═══════════════════════════════════════════════════════════
 

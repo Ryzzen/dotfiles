@@ -891,7 +891,7 @@ function AudioIndicator({ connector }: { connector: string }) {
 
 // ── Bluetooth ───────────────────────────────────────────────
 
-function BluetoothIndicator() {
+function BluetoothIndicator({ connector }: { connector: string }) {
     const bt = Bluetooth.get_default()
     const powered = createBinding(bt, "isPowered")
     const connected = createBinding(bt, "isConnected")
@@ -909,7 +909,10 @@ function BluetoothIndicator() {
     return (
         <button
             cssClasses={cssClasses}
-            onClicked={() => execAsync("blueman-manager")}
+            onClicked={() => {
+                const win = app.get_window(`bt-popup-${connector}`)
+                if (win) win.visible = !win.visible
+            }}
         >
             <label label={icon} />
         </button>
@@ -1206,7 +1209,7 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                         <box halign={Gtk.Align.END} spacing={compact ? 2 : 4} marginEnd={6}>
                             <HardwareStats connector={connector} />
                             <AudioIndicator connector={connector} />
-                            <BluetoothIndicator />
+                            <BluetoothIndicator connector={connector} />
                             <NetworkIndicator connector={connector} />
                             <BatteryIndicator />
                             <Clock connector={connector} compact={compact} />

@@ -10,6 +10,7 @@ import Launcher from "./widgets/Launcher"
 import HwPopup from "./widgets/HwPopup"
 import AudioPopup from "./widgets/AudioPopup"
 import WifiPopup from "./widgets/WifiPopup"
+import BluetoothPopup from "./widgets/BluetoothPopup"
 import CalendarPopup from "./widgets/CalendarPopup"
 
 const css = walCssDefines() + "\n" + style
@@ -39,6 +40,15 @@ function WifiPopups() {
     return (
         <For each={monitors}>
             {(mon) => <WifiPopup gdkmonitor={mon as Gdk.Monitor} />}
+        </For>
+    )
+}
+
+function BluetoothPopups() {
+    const monitors = createBinding(app, "monitors")
+    return (
+        <For each={monitors}>
+            {(mon) => <BluetoothPopup gdkmonitor={mon as Gdk.Monitor} />}
         </For>
     )
 }
@@ -91,6 +101,7 @@ app.start({
         HwPopups()
         AudioPopups()
         WifiPopups()
+        BluetoothPopups()
         CalendarPopups()
     },
     requestHandler(argv: string[], response: (msg: string) => void) {
@@ -112,6 +123,9 @@ app.start({
             response("ok")
         } else if (cmd === "toggle-wifi") {
             togglePopupOnFocusedMonitor("wifi-popup")
+            response("ok")
+        } else if (cmd === "toggle-bluetooth") {
+            togglePopupOnFocusedMonitor("bt-popup")
             response("ok")
         } else if (cmd === "toggle-hw-popup") {
             togglePopupOnFocusedMonitor("hw-popup")
