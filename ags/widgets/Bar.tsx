@@ -1036,6 +1036,7 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                     <box $type="start">
                         <box class="bar-left" $={(s: Gtk.Widget) => { refs.left = s }} spacing={compact ? 2 : 4}>
                             <AppMenuButton />
+                            <KeyboardButton />
                             <QuickLinks />
                             <SysTray />
                             <FocusedTitle />
@@ -1061,7 +1062,6 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                             <NetworkIndicator />
                             <BatteryIndicator />
                             <Clock connector={connector} compact={compact} />
-                            <KeyboardButton />
                             <PowerButton />
                         </box>
                     </box>
