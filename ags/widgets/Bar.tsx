@@ -68,9 +68,19 @@ const COMPACT_MAX_WIDTH = 1500
 
 const ANIM_PERIOD = 4.0   // seconds for full ping-pong cycle
 const BORDER_PX = 2
-const PULSE_W = 0.07      // pulse glow radius (fraction of path length)
-const TRAIL_LEN = 0.18    // trail length behind pulse
-const TRAIL_ALPHA = 0.18  // max trail brightness
+// Visibility of the animation is governed by how MUCH of the border is lit at
+// any instant, not by how bright its brightest point is. The pulse head already
+// runs at alpha 1.0, so it renders at the wal colour's own luminance (~188 for
+// primary against a ~22 surface) and cannot be pushed brighter without changing
+// the palette. Widening the head and strengthening the trail is what actually
+// reads as "brighter".
+const PULSE_W = 0.11      // pulse glow radius (fraction of path length)
+const TRAIL_LEN = 0.22    // trail length behind pulse
+const TRAIL_ALPHA = 0.42  // max trail brightness
+// Peak alpha of the pulse head itself. Named rather than repeated inline at the
+// two pulse heads, so the animation's brightness is adjustable from one place
+// alongside TRAIL_ALPHA instead of from a magic number buried in the hot loop.
+const PULSE_PEAK = 1.0
 const ANGLE_W = 48        // must match RoundedAngle contentWidth
 // 32 steps per segment: curves are ~60px long → ~1.9px per segment (visually
 // smooth), straight sections get ~12-20 gradient stops (enough to resolve the
@@ -478,7 +488,7 @@ function BorderOverlay({ connector }: { connector: string }) {
                             const lDist = frac > leftPos ? frac - leftPos : leftPos - frac
                             if (lDist < PULSE_W) {
                                 const u = lDist * invPulseW
-                                const lGlow = Math.exp(-u * u * 5) * 0.9
+                                const lGlow = Math.exp(-u * u * 5) * PULSE_PEAK
                                 if (lGlow > alpha) { alpha = lGlow; rr = pr; gg = pg; bb = pb }
                             }
                             // Left trail (quadratic falloff behind pulse)
@@ -491,7 +501,7 @@ function BorderOverlay({ connector }: { connector: string }) {
                             const rDist = frac > rightPos ? frac - rightPos : rightPos - frac
                             if (rDist < PULSE_W) {
                                 const u = rDist * invPulseW
-                                const rGlow = Math.exp(-u * u * 5) * 0.9
+                                const rGlow = Math.exp(-u * u * 5) * PULSE_PEAK
                                 if (rGlow > alpha) { alpha = rGlow; rr = ar; gg = ag; bb = ab }
                             }
                             // Right trail
