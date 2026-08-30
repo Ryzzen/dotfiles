@@ -239,6 +239,37 @@ function BorderOverlay({ connector }: { connector: string }) {
                     // the filled wedge on the curved sides.
                     const bot = refs.angleCL.get_height()
 
+                    // ── Seam cover ──────────────────────────────────────
+                    // Each RoundedAngle butts its flat edge straight against a
+                    // flat section's CSS background. At a fractional scale the
+                    // shared boundary lands mid device pixel (at 1.6, logical
+                    // 651 -> physical 1041.6), and neither side ends up owning
+                    // that pixel outright, so the layer's transparency shows
+                    // through it as a full-height hairline. It is invisible on a
+                    // dark wallpaper and obvious on a light one.
+                    //
+                    // It cannot be fixed from either side: cairo in the angle is
+                    // clipped to the angle's allocation, and GTK's CSS background
+                    // is clipped to the section's. Both were tried. This overlay
+                    // is the one surface spanning the whole bar with no per-widget
+                    // clip, so it is the only place that can paint across the
+                    // boundary — hence patching it here rather than nearer the
+                    // widgets that own the edges.
+                    //
+                    // Both sides of every junction are solid surface for the full
+                    // height (each angle's flat edge is the filled side of its
+                    // wedge), so a 2px band of the same colour is invisible except
+                    // for the seam it covers. Drawn before the border stroke so the
+                    // animation still paints on top, and written out rather than
+                    // looped over an array to keep this hot path allocation-free.
+                    const [seamR, seamG, seamB] = getWalSurface()
+                    cr.setSourceRGBA(seamR, seamG, seamB, 1)
+                    cr.rectangle(alx - 1, 0, 2, bot)              // bar-left | angleL
+                    cr.rectangle(clx + clw - 1, 0, 2, bot)        // angleCL  | workspaces
+                    cr.rectangle(crx - 1, 0, 2, bot)              // workspaces | angleCR
+                    cr.rectangle(arx + arw - 1, 0, 2, bot)        // angleR   | bar-right
+                    cr.fill()
+
                     // Rebuild geometry cache on layout change (rare — resize,
                     // monitor swap, or first frame).
                     if (
