@@ -1145,7 +1145,14 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                                 })
                             }}
                         >
-                        <box halign={Gtk.Align.END} spacing={compact ? 2 : 4}>
+                        {/* marginEnd is clearance for the last widget. Resting at
+                            the far end of the scroll puts the power button flush
+                            against the viewport edge, where the right side of its
+                            glyph gets shaved off - measured as a hard cut with no
+                            taper. Trailing margin inside the scrolled content means
+                            the end of the scroll is a few px past the button rather
+                            than exactly at it. */}
+                        <box halign={Gtk.Align.END} spacing={compact ? 2 : 4} marginEnd={6}>
                             <HardwareStats connector={connector} />
                             <AudioIndicator />
                             <BluetoothIndicator />
