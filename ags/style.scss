@@ -315,6 +315,121 @@ popover {
 }
 
 // ═══════════════════════════════════════════════════════════
+//   WIFI POPUP
+// ═══════════════════════════════════════════════════════════
+
+.WifiPopup {
+    background: transparent;
+}
+
+.wf-box {
+    background-color: #{"@surface"};
+    border: 1px solid #{"@outline_variant"};
+    border-radius: 12px;
+    padding: 12px;
+    min-width: 21rem;
+}
+
+.wf-title {
+    color: #{"@on_surface"};
+    font-size: 0.75rem;
+}
+
+.wf-scanning {
+    color: #{"@on_surface_variant"};
+    font-size: 0.6rem;
+}
+
+.wf-refresh {
+    background-color: #{"@surface_container_high"};
+    color: #{"@on_surface"};
+    border-radius: 8px;
+    min-width: 1.8rem;
+    min-height: 1.8rem;
+
+    &:hover { background-color: #{"@primary_container"}; }
+}
+
+// Each row is a touch target, so it gets height rather than the tight line
+// spacing a mouse-driven list could get away with.
+.wf-ap {
+    background-color: #{"@surface_container_high"};
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: #{"@on_surface"};
+
+    &:hover { background-color: #{"@primary_container"}; }
+
+    &.active {
+        background-color: #{"@primary"};
+        color: #{"@on_primary"};
+    }
+}
+
+// GTK's switch paints itself in the theme's accent - the same stock blue the
+// launcher entry's focus ring used - so it has to be told the palette
+// explicitly or it is the one control ignoring the wallpaper.
+.wf-switch {
+    background-color: #{"@surface_container_high"};
+    border-radius: 12px;
+
+    &:checked {
+        background-color: #{"@primary"};
+    }
+
+    > slider {
+        background-color: #{"@on_surface"};
+        border-radius: 50%;
+        min-width: 1rem;
+        min-height: 1rem;
+    }
+}
+
+.wf-ssid { font-size: 0.7rem; }
+.wf-sig  { font-size: 0.8rem; }
+
+.wf-lock,
+.wf-pct {
+    color: #{"@on_surface_variant"};
+    font-size: 0.6rem;
+}
+
+.wf-ap.active .wf-lock,
+.wf-ap.active .wf-pct {
+    color: #{"@on_primary"};
+}
+
+.wf-pw {
+    padding: 6px 2px 2px;
+}
+
+.wf-pw-entry {
+    background-color: #{"@surface_container_high"};
+    color: #{"@on_surface"};
+    caret-color: #{"@primary"};
+    border: 1px solid #{"@outline_variant"};
+    border-radius: 8px;
+    padding: 5px 8px;
+    font-size: 0.7rem;
+
+    // Same reason as the launcher: GTK draws its own blue focus ring on top of
+    // the stylesheet, which is the one thing that would ignore the wal palette.
+    &:focus,
+    &:focus-within {
+        outline-style: none;
+        border-color: #{"@primary"};
+    }
+}
+
+.wf-join {
+    background-color: #{"@primary"};
+    color: #{"@on_primary"};
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 0.7rem;
+}
+
+// ═══════════════════════════════════════════════════════════
 //   AUDIO POPUP
 // ═══════════════════════════════════════════════════════════
 

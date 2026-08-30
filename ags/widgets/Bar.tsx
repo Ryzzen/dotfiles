@@ -918,7 +918,7 @@ function BluetoothIndicator() {
 
 // ── Network ─────────────────────────────────────────────────
 
-function NetworkIndicator() {
+function NetworkIndicator({ connector }: { connector: string }) {
     const nw = Network.get_default()
     const primary = createBinding(nw, "primary")
     const wifi = nw.wifi
@@ -935,7 +935,10 @@ function NetworkIndicator() {
     return (
         <button
             class="bar-indicator"
-            onClicked={() => execAsync("nm-connection-editor")}
+            onClicked={() => {
+                const win = app.get_window(`wifi-popup-${connector}`)
+                if (win) win.visible = !win.visible
+            }}
         >
             <label label={label} />
         </button>
@@ -1204,7 +1207,7 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                             <HardwareStats connector={connector} />
                             <AudioIndicator connector={connector} />
                             <BluetoothIndicator />
-                            <NetworkIndicator />
+                            <NetworkIndicator connector={connector} />
                             <BatteryIndicator />
                             <Clock connector={connector} compact={compact} />
                             <PowerButton />
