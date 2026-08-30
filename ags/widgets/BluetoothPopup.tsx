@@ -31,9 +31,19 @@ export default function BluetoothPopup({ gdkmonitor }: { gdkmonitor: Gdk.Monitor
     // Connected first, then paired, then whatever discovery has turned up, each
     // group by name. A flat list ordered by however bluez happened to hand them
     // over puts the headphones you are using below a stranger's television.
+    // A device with no friendly name is shown by bluez as its own address with
+    // the colons swapped for dashes. In a dense area those anonymous entries -
+    // phones, cars, televisions passing by - outnumber the ones worth tapping,
+    // so they sort last rather than being hidden: still reachable to pair
+    // something new, never in the way of the headphones.
+    const anonymous = (d: Bluetooth.Device) => {
+        const label = d.alias || d.name || ""
+        return label.replace(/-/g, ":").toUpperCase() === (d.address || "").toUpperCase()
+    }
+
     const devices = createBinding(bt, "devices")((ds: Bluetooth.Device[]) => {
         const rank = (d: Bluetooth.Device) =>
-            d.connected ? 0 : d.paired ? 1 : 2
+            d.connected ? 0 : d.paired ? 1 : anonymous(d) ? 3 : 2
         return [...ds]
             .filter((d) => d.name || d.alias)
             .sort((a, b) => {
