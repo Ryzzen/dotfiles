@@ -2,6 +2,7 @@ import { Astal, Gtk, Gdk } from "ags/gtk4"
 import { createPoll } from "ags/time"
 import { createState, createComputed } from "ags"
 import app from "ags/gtk4/app"
+import { closeOnClickOutside } from "./dismiss"
 
 function daysInMonth(year: number, month: number): number {
     return new Date(year, month + 1, 0).getDate()
@@ -158,7 +159,7 @@ function UpcomingInfo() {
 }
 
 export default function CalendarPopup({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
-    const { TOP, RIGHT } = Astal.WindowAnchor
+    const { TOP, RIGHT, BOTTOM, LEFT } = Astal.WindowAnchor
     const connector = gdkmonitor.get_connector() || "unknown"
 
     return (
@@ -171,12 +172,22 @@ export default function CalendarPopup({ gdkmonitor }: { gdkmonitor: Gdk.Monitor 
             exclusivity={Astal.Exclusivity.NORMAL}
             layer={Astal.Layer.TOP}
             keymode={Astal.Keymode.NONE}
-            anchor={TOP | RIGHT}
+            anchor={TOP | RIGHT | BOTTOM | LEFT}
             application={app}
-            marginTop={40}
-            marginRight={6}
+            $={(self: Astal.Window) => {
+                const content = self.get_child()
+                if (content) closeOnClickOutside(self, content)
+            }}
         >
-            <box class="cal-popup-content" orientation={Gtk.Orientation.VERTICAL} spacing={12}>
+            <box
+                class="cal-popup-content"
+                orientation={Gtk.Orientation.VERTICAL}
+                spacing={12}
+                halign={Gtk.Align.END}
+                valign={Gtk.Align.START}
+                marginTop={40}
+                marginEnd={6}
+            >
                 <UpcomingInfo />
                 <CalendarGrid />
             </box>

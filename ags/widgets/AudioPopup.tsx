@@ -1,6 +1,7 @@
 import { Astal, Gtk, Gdk } from "ags/gtk4"
 import { createBinding, For } from "ags"
 import app from "ags/gtk4/app"
+import { closeOnClickOutside } from "./dismiss"
 import Wp from "gi://AstalWp"
 
 // The bar's volume control used to be a button that launched pavucontrol: a
@@ -169,7 +170,7 @@ function AppMixer() {
 }
 
 export default function AudioPopup({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
-    const { TOP, RIGHT } = Astal.WindowAnchor
+    const { TOP, RIGHT, BOTTOM, LEFT } = Astal.WindowAnchor
     const connector = gdkmonitor.get_connector() || "unknown"
     const audio = Wp.get_default()!.audio!
 
@@ -183,12 +184,25 @@ export default function AudioPopup({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) 
             exclusivity={Astal.Exclusivity.NORMAL}
             layer={Astal.Layer.TOP}
             keymode={Astal.Keymode.NONE}
-            anchor={TOP | RIGHT}
+            // Covers the screen so a click beside it can be caught; the box
+            // inside is what is actually visible, held in the same spot the
+            // window used to be anchored to.
+            anchor={TOP | RIGHT | BOTTOM | LEFT}
             application={app}
-            marginTop={40}
-            marginRight={90}
+            $={(self: Astal.Window) => {
+                const content = self.get_child()
+                if (content) closeOnClickOutside(self, content)
+            }}
         >
-            <box class="ap-box" orientation={Gtk.Orientation.VERTICAL} spacing={10}>
+            <box
+                class="ap-box"
+                orientation={Gtk.Orientation.VERTICAL}
+                spacing={10}
+                halign={Gtk.Align.END}
+                valign={Gtk.Align.START}
+                marginTop={40}
+                marginEnd={90}
+            >
                 <EndpointRow
                     endpoint={audio.default_speaker!}
                     icon={ICON.SPEAKER}

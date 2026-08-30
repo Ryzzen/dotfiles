@@ -1,6 +1,7 @@
 import { Astal, Gtk, Gdk } from "ags/gtk4"
 import { createPoll } from "ags/time"
 import app from "ags/gtk4/app"
+import { closeOnClickOutside } from "./dismiss"
 
 const ICON = {
     CPU:   "\u{f4bc}",
@@ -84,7 +85,7 @@ function NetworkSpeed() {
 }
 
 export default function HwPopup({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
-    const { TOP, RIGHT } = Astal.WindowAnchor
+    const { TOP, RIGHT, BOTTOM, LEFT } = Astal.WindowAnchor
     const connector = gdkmonitor.get_connector() || "unknown"
 
     const cpu = createPoll("0 0", 3000, [
@@ -126,12 +127,24 @@ export default function HwPopup({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
             exclusivity={Astal.Exclusivity.NORMAL}
             layer={Astal.Layer.TOP}
             keymode={Astal.Keymode.NONE}
-            anchor={TOP | RIGHT}
+            // Full-screen so a click beside it is catchable; the content box
+            // keeps the position the window used to be anchored to.
+            anchor={TOP | RIGHT | BOTTOM | LEFT}
             application={app}
-            marginTop={40}
-            marginRight={200}
+            $={(self: Astal.Window) => {
+                const content = self.get_child()
+                if (content) closeOnClickOutside(self, content)
+            }}
         >
-            <box class="hw-popup-content" orientation={Gtk.Orientation.VERTICAL} spacing={12}>
+            <box
+                class="hw-popup-content"
+                orientation={Gtk.Orientation.VERTICAL}
+                spacing={12}
+                halign={Gtk.Align.END}
+                valign={Gtk.Align.START}
+                marginTop={40}
+                marginEnd={200}
+            >
                 <label class="hw-popup-title" label="System Monitor" halign={Gtk.Align.START} />
 
                 <StatRow

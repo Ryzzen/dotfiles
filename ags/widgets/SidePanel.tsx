@@ -3,6 +3,7 @@ import { createBinding, createState, For } from "ags"
 import { createPoll } from "ags/time"
 import { execAsync } from "ags/process"
 import app from "ags/gtk4/app"
+import { closeOnClickOutside } from "./dismiss"
 import Wp from "gi://AstalWp"
 import Bluetooth from "gi://AstalBluetooth"
 import Network from "gi://AstalNetwork"
@@ -313,7 +314,7 @@ function AppMixer() {
 // ── Side Panel ──────────────────────────────────────────────
 
 export default function SidePanel(monitor: number) {
-    const { TOP, RIGHT, BOTTOM } = Astal.WindowAnchor
+    const { TOP, RIGHT, BOTTOM, LEFT } = Astal.WindowAnchor
 
     return (
         <window
@@ -325,20 +326,23 @@ export default function SidePanel(monitor: number) {
             exclusivity={Astal.Exclusivity.NORMAL}
             layer={Astal.Layer.TOP}
             keymode={Astal.Keymode.ON_DEMAND}
-            anchor={TOP | RIGHT | BOTTOM}
+            // Anchored on all four sides so a click beside the panel is
+            // catchable. The scroller below keeps the strip's old geometry.
+            anchor={TOP | RIGHT | BOTTOM | LEFT}
             application={app}
-            marginTop={6}
-            marginRight={6}
-            marginBottom={6}
+            $={(self: Astal.Window) => {
+                const content = self.get_child()
+                if (content) closeOnClickOutside(self, content)
+            }}
         >
-            <Gtk.GestureClick
-                button={0}
-                propagationPhase={Gtk.PropagationPhase.CAPTURE}
-                onPressed={(_self, _nPress, x, y) => {
-                    // Close if click is outside the panel content
-                }}
-            />
-            <scrolledwindow class="sp-scroll" hscrollbarPolicy={Gtk.PolicyType.NEVER}>
+            <scrolledwindow
+                class="sp-scroll"
+                hscrollbarPolicy={Gtk.PolicyType.NEVER}
+                halign={Gtk.Align.END}
+                marginTop={6}
+                marginEnd={6}
+                marginBottom={6}
+            >
                 <box class="sp-content" orientation={Gtk.Orientation.VERTICAL} spacing={12}>
                     <Header />
                     <QuickToggles />
