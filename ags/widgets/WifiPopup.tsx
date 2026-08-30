@@ -197,7 +197,21 @@ export default function WifiPopup({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                                                       )
                                                     : ["wf-ap"]
                                             }
-                                            onClicked={() => join(ap)}
+                                            onClicked={(self: Gtk.Widget) => {
+                                                // Touch delivers no leave event,
+                                                // so without clearing these the
+                                                // last row tapped keeps its hover
+                                                // and pressed styling and reads
+                                                // as the selected network - next
+                                                // to the row that actually is
+                                                // connected. Same reason the Apps
+                                                // button clears its own.
+                                                self.unset_state_flags(
+                                                    Gtk.StateFlags.PRELIGHT |
+                                                    Gtk.StateFlags.ACTIVE
+                                                )
+                                                join(ap)
+                                            }}
                                         >
                                             <box spacing={8}>
                                                 <label

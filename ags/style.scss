@@ -352,13 +352,22 @@ popover {
 
 // Each row is a touch target, so it gets height rather than the tight line
 // spacing a mouse-driven list could get away with.
+// Only ONE thing in this list may wear an accent colour, and it is the network
+// actually connected. Hover used to be @primary_container, which on a touchscreen
+// is worse than merely similar: there is no leave event, so the last row tapped
+// kept the accent and sat there looking selected beside the row that genuinely
+// was. Hover is now a neutral lift that cannot be mistaken for state.
 .wf-ap {
     background-color: #{"@surface_container_high"};
     border-radius: 8px;
     padding: 8px 10px;
     color: #{"@on_surface"};
 
-    &:hover { background-color: #{"@primary_container"}; }
+    &:hover { background-color: #{"@surface_bright"}; }
+
+    // No :focus rule on purpose. GTK keeps focus on the last activated button,
+    // which would pin a highlight to it for as long as the popup is open.
+    &:focus { outline-style: none; }
 
     &.active {
         background-color: #{"@primary"};
