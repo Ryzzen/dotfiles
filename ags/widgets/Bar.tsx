@@ -1123,19 +1123,30 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                             hugging the right, and anything that does not fit is
                             clipped off the LEFT - the stats go first, the clock and
                             power button stay. Drag it to bring them back. */}
+                        <overlay hexpand>
                         <scrolledwindow
                             hexpand
                             propagateNaturalWidth={false}
                             hscrollbarPolicy={Gtk.PolicyType.EXTERNAL}
                             vscrollbarPolicy={Gtk.PolicyType.NEVER}
+                            kineticScrolling={false}
                             $={(self: Gtk.ScrolledWindow) => {
-                                // Park at the right-hand end whenever the content or
-                                // the space for it changes. "changed" fires on those,
-                                // not on scrolling, so this re-anchors after a layout
-                                // change without fighting a drag in progress.
                                 const adj = self.get_hadjustment()
-                                adj.connect("changed", () => {
-                                    adj.set_value(Math.max(0, adj.get_upper() - adj.get_page_size()))
+                                const end = () =>
+                                    Math.max(0, adj.get_upper() - adj.get_page_size())
+                                // Pinned to the right-hand end, and kept there. The
+                                // panel is meant to look stationary with its content
+                                // running off under the fade, not to be draggable:
+                                // the background lives on the scrolled box, so any
+                                // real scroll slides the panel itself rather than its
+                                // contents, which reads as the whole bar coming
+                                // loose. Re-anchoring on both signals makes a drag a
+                                // no-op. Setting the value here re-enters
+                                // value-changed once and then matches, so it settles
+                                // rather than looping.
+                                adj.connect("changed", () => adj.set_value(end()))
+                                adj.connect("value-changed", () => {
+                                    if (adj.get_value() !== end()) adj.set_value(end())
                                 })
                             }}
                         >
@@ -1152,6 +1163,34 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                         </box>
                         </box>
                         </scrolledwindow>
+                        {/* Fades the clipped edge out instead of guillotining it, so
+                            content that does not fit dissolves into the bar rather
+                            than stopping mid-glyph. Sits at the viewport's left edge,
+                            which is exactly where the clip falls once the content
+                            overflows.
+
+                            Hidden while everything fits: with the content aligned
+                            right, the left of the viewport is empty in that case and
+                            the gradient would just smear panel colour across bare
+                            wallpaper. */}
+                        <box
+                            class="bar-right-fade"
+                            $type="overlay"
+                            halign={Gtk.Align.START}
+                            valign={Gtk.Align.FILL}
+                            canTarget={false}
+                            widthRequest={26}
+                            $={(self: Gtk.Widget) => {
+                                const sw = self.get_parent()?.get_first_child() as Gtk.ScrolledWindow
+                                const adj = sw?.get_hadjustment?.()
+                                if (!adj) return
+                                const sync = () =>
+                                    self.set_visible(adj.get_upper() > adj.get_page_size() + 1)
+                                adj.connect("changed", sync)
+                                sync()
+                            }}
+                        />
+                        </overlay>
                     </box>
                 </centerbox>
                 <BorderOverlay connector={connector} $type="overlay" />
