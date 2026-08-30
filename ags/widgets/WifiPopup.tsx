@@ -70,6 +70,18 @@ export default function WifiPopup({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
     let password = ""
 
     const join = (ap: Network.AccessPoint) => {
+        // Tapping the row whose password field is already open closes it again.
+        // Without this the same access point was simply set pending a second
+        // time, which is not a state change, so the field stayed put and the row
+        // looked unresponsive - there was no way to back out of a prompt except
+        // by joining or closing the whole popup.
+        const current = pending.get()
+        if (current && current.bssid === ap.bssid) {
+            password = ""
+            setPending(null)
+            return
+        }
+
         // A saved connection means NetworkManager already holds the secret, so
         // there is nothing to ask for even on a secured network.
         const known = ap.get_connections().length > 0
@@ -83,7 +95,7 @@ export default function WifiPopup({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
     }
 
     const submit = () => {
-        const ap = pending.get?.() ?? null
+        const ap = pending.get()
         if (!ap) return
         ap.activate(password, null)
         password = ""
@@ -172,6 +184,7 @@ export default function WifiPopup({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                                     ? activeAp((a) => a?.bssid === ap.bssid)
                                     : null
                                 const isPending = pending((p) => p?.bssid === ap.bssid)
+                                let rowEntry: Gtk.Entry | null = null
                                 return (
                                     <box orientation={Gtk.Orientation.VERTICAL} spacing={0}>
                                         <button
@@ -216,6 +229,21 @@ export default function WifiPopup({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                                             transitionType={
                                                 Gtk.RevealerTransitionType.SLIDE_DOWN
                                             }
+                                            $={(self: Gtk.Revealer) => {
+                                                // Wipe the box when the prompt
+                                                // folds away. The widget outlives
+                                                // the prompt, so without this a
+                                                // half-typed password from an
+                                                // abandoned attempt is still
+                                                // sitting there next time.
+                                                self.connect(
+                                                    "notify::reveal-child",
+                                                    () => {
+                                                        if (self.revealChild) return
+                                                        rowEntry?.set_text("")
+                                                    }
+                                                )
+                                            }}
                                         >
                                             <box class="wf-pw" spacing={6}>
                                                 <entry
@@ -224,6 +252,7 @@ export default function WifiPopup({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                                                     placeholderText="Password"
                                                     hexpand
                                                     $={(self: Gtk.Entry) => {
+                                                        rowEntry = self
                                                         self.connect("notify::text", () => {
                                                             password = self.get_text()
                                                         })
