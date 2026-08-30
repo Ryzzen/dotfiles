@@ -14,8 +14,13 @@
 }
 
 @keyframes battery-blink {
-    0%, 100% { opacity: 1; }
-    50%      { opacity: 0.25; }
+    // Listed separately, not as `0%, 100%`: GTK4's CSS parser does not accept
+    // comma-grouped keyframe selectors. It reads the `0%`, expects a `{`, hits
+    // the comma and drops the whole rule - "CSS Error :24:5 Expected '{'" on
+    // every startup, taking the battery blink animation with it.
+    0%   { opacity: 1; }
+    100% { opacity: 1; }
+    50%  { opacity: 0.25; }
 }
 
 button {

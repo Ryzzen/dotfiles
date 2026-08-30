@@ -709,7 +709,7 @@ function Workspaces({ compact }: { compact: boolean }) {
 
 // ── Focused Title ────────────────────────────────────────────
 
-function FocusedTitle({ compact }: { compact: boolean }) {
+function FocusedTitle() {
     const hypr = Hyprland.get_default()
     const client = createBinding(hypr, "focusedClient")
 
@@ -722,14 +722,14 @@ function FocusedTitle({ compact }: { compact: boolean }) {
                 class="title-class"
                 label={wmClass}
                 halign={Gtk.Align.END}
-                maxWidthChars={compact ? 12 : 22}
+                maxWidthChars={22}
                 ellipsize={3}
             />
             <label
                 class="title-title"
                 label={title}
                 halign={Gtk.Align.END}
-                maxWidthChars={compact ? 12 : 22}
+                maxWidthChars={22}
                 ellipsize={3}
             />
         </box>
@@ -933,7 +933,13 @@ function HardwareStats({ connector }: { connector: string }) {
 
 function Clock({ connector, compact }: { connector: string; compact: boolean }) {
     const time = createPoll("", 1000, ["date", "+%H:%M:%S"])
-    const date = createPoll("", 5000, ["date", "+%a %Y-%m-%d"])
+    // The clock's width is max(date, time), and the date renders at 0.6rem
+    // against the time's 0.7rem - so a date of roughly nine characters or
+    // fewer costs no width at all, it just fills space the time already
+    // claimed. "%a %d/%m" fits inside that budget, which is why the compact
+    // bar can keep showing a date instead of dropping the line.
+    const dateFmt = compact ? "+%a %d/%m" : "+%a %Y-%m-%d"
+    const date = createPoll("", 5000, ["date", dateFmt])
 
     const toggleCal = () => {
         const win = app.get_window(`calendar-popup-${connector}`)
@@ -942,23 +948,8 @@ function Clock({ connector, compact }: { connector: string; compact: boolean }) 
 
     return (
         <button class="clock-container" onClicked={toggleCal}>
-            <box
-                orientation={Gtk.Orientation.VERTICAL}
-                valign={compact ? Gtk.Align.CENTER : Gtk.Align.FILL}
-            >
-                {/* The date line is the widest thing in the right section
-                    ("%a %Y-%m-%d" is ~15 chars against the time's 8), and it is
-                    the first casualty when the section overflows. Drop it on a
-                    narrow panel and keep the time. `visible` rather than an
-                    unrendered child: GTK does not allocate invisible widgets,
-                    so this actually reclaims the width, and GTK4 CSS has no
-                    `display: none` to do it from the stylesheet. */}
-                <label
-                    class="clock-date"
-                    label={date}
-                    halign={Gtk.Align.END}
-                    visible={!compact}
-                />
+            <box orientation={Gtk.Orientation.VERTICAL}>
+                <label class="clock-date" label={date} halign={Gtk.Align.END} />
                 <label class="clock-time" label={time} halign={Gtk.Align.END} />
             </box>
         </button>
@@ -1018,7 +1009,7 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                             <AppMenuButton />
                             <QuickLinks />
                             <SysTray />
-                            <FocusedTitle compact={compact} />
+                            <FocusedTitle />
                         </box>
                         <RoundedAngle place="topright" setup={(s) => { refs.angleL = s }} />
                     </box>
