@@ -900,7 +900,22 @@ function BatteryIndicator() {
     const bat = Battery.get_default()
     const percentage = createBinding(bat, "percentage")
     const charging = createBinding(bat, "charging")
+    const state = createBinding(bat, "state")
     const available = createBinding(bat, "isPresent")
+
+    // "Plugged in" is not the same question as "charging", and the bolt is
+    // answering the first one. With a charge threshold set (this tablet stops
+    // at 80% and only resumes below 75%) the battery spends most of its plugged
+    // life in PENDING_CHARGE: on mains, drawing nothing. `charging` is false
+    // there, so keying the bolt off it made the tablet look unplugged whenever
+    // it was sitting in that window - which is most of the time, by design.
+    // FULLY_CHARGED counts too, for the case where no threshold is in play.
+    const plugged = state(
+        (st) =>
+            st === Battery.State.CHARGING ||
+            st === Battery.State.PENDING_CHARGE ||
+            st === Battery.State.FULLY_CHARGED
+    )
 
     const icon = percentage((p) => {
         const pct = Math.round(p * 100)
@@ -911,7 +926,7 @@ function BatteryIndicator() {
         return ICON.BAT_0
     })
     const pctLabel = percentage((p) => ` ${Math.round(p * 100)}%`)
-    const chargingIcon = charging((c) => (c ? `${ICON.CHARGING} ` : ""))
+    const chargingIcon = plugged((p) => (p ? `${ICON.CHARGING} ` : ""))
 
     const cssClasses = createComputed(() => {
         const p = percentage()
