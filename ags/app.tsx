@@ -6,6 +6,7 @@ import style from "./style.scss"
 import { walCssDefines, reloadWalColors } from "./walColors"
 import Bars from "./widgets/Bar"
 import SidePanel from "./widgets/SidePanel"
+import Launcher from "./widgets/Launcher"
 import HwPopup from "./widgets/HwPopup"
 import CalendarPopup from "./widgets/CalendarPopup"
 
@@ -65,6 +66,7 @@ app.start({
     css: css,
     main() {
         Bars()
+        Launcher()
         SidePanel(0)
         HwPopups()
         CalendarPopups()

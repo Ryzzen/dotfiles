@@ -639,46 +639,32 @@ function RoundedAngle({
 
 // ── App Menu ────────────────────────────────────────────────
 
-// Raising the keyboard is the only interesting part here, and the order matters.
-// rofi and wvkbd are both overlay-layer surfaces, so whichever maps last is on
-// top; bring the keyboard up first and rofi buries it. Hence: open rofi, wait for
-// it to map, then cycle the keyboard. Cycled rather than merely shown, because
-// SIGUSR2 does not re-map a keyboard that is already up, which is precisely the
-// common case - keyboard open, then reach for the launcher.
+// The launcher is an ags window in this same process, so this is a plain
+// visibility toggle - no process to spawn, no pkill race, and pressing again
+// really does close it. That was impossible with rofi: it grabs the pointer
+// while open, so this button could not be pressed a second time at all.
 //
-// SIGUSR1/SIGUSR2 are wvkbd's explicit hide and show; SIGRTMIN toggles, which
-// would depend on a visibility state nothing here tracks. `wait` then puts the
-// keyboard away on rofi's own terms, so Escape and launching something both
-// clean up the same way.
-//
-// There is deliberately no close-if-open branch. rofi is a layer surface with no
-// wl_touch binding at all, so while it is up this button cannot be pressed - the
-// tap goes to rofi, which does nothing with it. Dismissal is handled where the
-// touch actually lands, by touch-click, which closes an open launcher when a tap
-// falls outside it. A toggle here would be dead code dressed up as a feature.
-const ROFI_OPEN =
-    "rofi -show drun & p=$!; " +
-    "sleep 0.25; " +
-    "pkill -SIGUSR1 -x wvkbd-mobintl; sleep 0.05; pkill -SIGUSR2 -x wvkbd-mobintl; " +
-    "wait $p; pkill -SIGUSR1 -x wvkbd-mobintl"
-
+// Raising the on-screen keyboard is still worth doing, and still has to happen
+// after the launcher is up: both are layer surfaces and the last to map sits on
+// top. Cycled hide-then-show rather than merely shown, because SIGUSR2 does not
+// re-map a keyboard that is already visible, which is the common case - keyboard
+// open, then reach for the launcher.
 function AppMenuButton() {
-    let btn: Gtk.Widget | null = null
     return (
         <button
             class="appmenu-btn"
-            $={(self: Gtk.Widget) => { btn = self }}
             onClicked={() => {
-                // rofi grabs the moment it maps, so the leave and release this
-                // button is waiting for never arrive and GTK holds the hover and
-                // pressed styling - lit up for as long as rofi is open, and after.
-                btn?.unset_state_flags(
-                    Gtk.StateFlags.PRELIGHT | Gtk.StateFlags.ACTIVE
-                )
+                const win = app.get_window("launcher")
+                if (!win) return
+                const opening = !win.visible
+                win.visible = opening
+                if (!HAS_WVKBD) return
                 execAsync([
                     "sh",
                     "-c",
-                    HAS_WVKBD ? ROFI_OPEN : "rofi -show drun",
+                    opening
+                        ? "sleep 0.15; pkill -SIGUSR1 -x wvkbd-mobintl; sleep 0.05; pkill -SIGUSR2 -x wvkbd-mobintl"
+                        : "pkill -SIGUSR1 -x wvkbd-mobintl",
                 ]).catch(() => {})
             }}
         >

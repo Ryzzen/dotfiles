@@ -315,6 +315,48 @@ popover {
 }
 
 // ═══════════════════════════════════════════════════════════
+//   LAUNCHER
+// ═══════════════════════════════════════════════════════════
+
+.Launcher {
+    background: transparent;
+}
+
+.launcher-box {
+    background-color: #{"@surface"};
+    border-radius: 12px;
+    border: 1px solid #{"@outline_variant"};
+    padding: 10px;
+    min-width: 26rem;
+}
+
+.launcher-entry {
+    background-color: #{"@surface_container_high"};
+    color: #{"@on_surface"};
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+}
+
+.launcher-item {
+    background: transparent;
+    border-radius: 8px;
+    // Generous vertical padding: these are touch targets first. The bar can get
+    // away with icon-sized buttons because it is aimed at with a stylus or a
+    // careful tap; a list being scrolled through with a thumb cannot.
+    padding: 8px 10px;
+
+    &:hover {
+        background-color: #{"@surface_container_high"};
+    }
+}
+
+.launcher-item-name {
+    color: #{"@on_surface"};
+    font-size: 0.75rem;
+}
+
+// ═══════════════════════════════════════════════════════════
 //   SIDE PANEL
 // ═══════════════════════════════════════════════════════════
 
