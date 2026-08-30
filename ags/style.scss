@@ -314,6 +314,19 @@ popover {
     .power-btn { padding: 0 3px; }
 }
 
+// The click-catcher behind every popup. It must be completely invisible and
+// completely inert to look at - it is only there to be pressed.
+.scrim {
+    background: none;
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    outline-style: none;
+    min-width: 0;
+    min-height: 0;
+    padding: 0;
+}
+
 // Hover has to be hue-free, and on this machine it also has to survive being
 // permanent. Two things conspire:
 //

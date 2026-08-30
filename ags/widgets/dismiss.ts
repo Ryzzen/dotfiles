@@ -5,46 +5,43 @@ import { Astal, Gtk } from "ags/gtk4"
  *
  * A layer-shell window is only as large as what it holds, so a click beside a
  * popup lands on whatever is underneath and the popup never hears about it.
- * Catching that click means the window has to cover the screen: anchor it to all
- * four edges, keep the background transparent, and position the content with
- * halign/valign plus the margins it used to be anchored by. It looks identical
- * and the whole surface becomes a target.
+ * These windows therefore cover the screen with a transparent background, and
+ * the content positions itself with halign/valign plus margins.
  *
- * The cost is real and worth stating: while the popup is open, that invisible
- * surface takes clicks meant for anything below it, including the bar. So the
- * first click anywhere dismisses, and a second one reaches whatever was aimed
- * at. That is ordinary modal behaviour, but it is the same mechanism that makes
- * rofi so hostile on this machine, so it is deliberately confined to popups that
- * are only up while the user is interacting with them.
+ * "Outside" is a real widget rather than a gesture doing bounds arithmetic. The
+ * gesture version worked perfectly with a pointer - five times out of five - and
+ * only two times out of four by touch, which is precisely the "sometimes I have
+ * to tap twice" it was reported as. GTK arbitrates touch sequences between
+ * competing gestures and a capture-phase click gesture does not reliably win;
+ * an ordinary button has no such problem, because activation is not something
+ * that has to be won.
  *
- * The keyboard stays reachable regardless: these windows sit on Layer.TOP while
- * wvkbd is on OVERLAY, so it is never covered.
+ * So: a transparent button fills the window, the content sits above it as an
+ * overlay child, and anything landing on the button is by definition not on the
+ * content. No coordinate maths, and the same path for touch and pointer.
  *
- * CAPTURE phase so the gesture is evaluated before the content's own widgets
- * claim the press - otherwise a click on a slider or a button inside the popup
- * would be seen here first as a plain press and could close what the user was
- * aiming at.
+ * The cost is unchanged and worth restating: while a popup is open its invisible
+ * surface takes clicks meant for anything below it, so the first click anywhere
+ * dismisses and a second reaches what was aimed at. The on-screen keyboard is
+ * exempt regardless, sitting on OVERLAY while these are on TOP.
  */
 export function closeOnClickOutside(win: Astal.Window, content: Gtk.Widget) {
-    const click = new Gtk.GestureClick({
-        button: 0,
-        propagationPhase: Gtk.PropagationPhase.CAPTURE,
+    const overlay = new Gtk.Overlay()
+
+    const scrim = new Gtk.Button({
+        canFocus: false,
+        hexpand: true,
+        vexpand: true,
+    })
+    scrim.add_css_class("scrim")
+    scrim.connect("clicked", () => {
+        win.visible = false
     })
 
-    click.connect("pressed", (_gesture, _nPress, x: number, y: number) => {
-        const [ok, rect] = content.compute_bounds(win)
-        // If the bounds cannot be resolved the popup is mid-layout; doing
-        // nothing is better than closing on a press we cannot place.
-        if (!ok) return
-
-        const inside =
-            x >= rect.get_x() &&
-            x <= rect.get_x() + rect.get_width() &&
-            y >= rect.get_y() &&
-            y <= rect.get_y() + rect.get_height()
-
-        if (!inside) win.visible = false
-    })
-
-    win.add_controller(click)
+    // Re-parent: the content becomes an overlay child so it keeps drawing where
+    // its own alignment puts it, with the scrim filling everything behind it.
+    win.set_child(null)
+    overlay.set_child(scrim)
+    overlay.add_overlay(content)
+    win.set_child(overlay)
 }
