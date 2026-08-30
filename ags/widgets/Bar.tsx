@@ -639,9 +639,42 @@ function RoundedAngle({
 
 // ── App Menu ────────────────────────────────────────────────
 
+// One shell line, because all three parts have to agree about the same rofi.
+//
+//   toggle   - a second press closes it. `pkill -x rofi` returning 0 means one
+//              was running and is now gone, so there is nothing left to do.
+//   keyboard - shown only AFTER rofi has mapped, and that ordering is the whole
+//              point. Both are overlay-layer surfaces, so which one is on top is
+//              decided by which mapped last; bring the keyboard up first and
+//              rofi covers it, and every tap lands in rofi instead. Hyprland's
+//              layerrule `order` would say this outright, but no spelling of it
+//              this build accepts parsed.
+//   cleanup  - `wait` lets rofi exit on its own terms, by Escape or by launching
+//              something, and the keyboard is put away afterwards either way.
+//
+// SIGUSR1/SIGUSR2 are wvkbd's explicit hide and show. SIGRTMIN toggles, which is
+// wrong here: it would depend on a visibility state nothing tracks.
+const ROFI_TOGGLE =
+    "pkill -x rofi && exit 0; " +
+    "rofi -show drun & p=$!; " +
+    "sleep 0.25; pkill -SIGUSR2 -x wvkbd-mobintl; " +
+    "wait $p; pkill -SIGUSR1 -x wvkbd-mobintl"
+
 function AppMenuButton() {
     return (
-        <button class="appmenu-btn" onClicked={() => execAsync("rofi -show drun")}>
+        <button
+            class="appmenu-btn"
+            onClicked={(self: Gtk.Widget) => {
+                // rofi takes a grab the instant it maps, so the pointer never
+                // sends this button its leave/release. Without clearing them by
+                // hand the hover and pressed styling stick, and the button sits
+                // lit up for as long as rofi is open - and after it closes too.
+                self.unset_state_flags(
+                    Gtk.StateFlags.PRELIGHT | Gtk.StateFlags.ACTIVE
+                )
+                execAsync(["sh", "-c", HAS_WVKBD ? ROFI_TOGGLE : "pkill -x rofi || rofi -show drun"])
+            }}
+        >
             <label label="Apps" />
         </button>
     )
