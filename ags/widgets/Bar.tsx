@@ -639,27 +639,23 @@ function RoundedAngle({
 
 // ── App Menu ────────────────────────────────────────────────
 
-// rofi's click-to-exit defaults to true, and that is what defeats the obvious
-// toggle. Pressing this button while rofi is open does two things at once: the
-// press lands outside rofi's window so rofi closes ITSELF, and the same press
-// reaches this button, whose `pkill -x rofi` then finds nothing left to kill and
-// cheerfully opens a second one. The launcher looks like it refuses to close.
+// Raising the keyboard is the only interesting part here, and the order matters.
+// rofi and wvkbd are both overlay-layer surfaces, so whichever maps last is on
+// top; bring the keyboard up first and rofi buries it. Hence: open rofi, wait for
+// it to map, then cycle the keyboard. Cycled rather than merely shown, because
+// SIGUSR2 does not re-map a keyboard that is already up, which is precisely the
+// common case - keyboard open, then reach for the launcher.
 //
-// No shell test can win that race, because rofi is already gone by the time the
-// handler runs. So the state lives here instead, and a press shortly after a
-// close is understood as the press that caused it.
-let rofiOpen = false
-let rofiClosedAt = 0
-
-// Hide-then-show rather than just show. Both rofi and wvkbd are overlay-layer
-// surfaces, so the top one is whichever mapped last; sending only SIGUSR2 to a
-// keyboard that is already up does not re-map it, and it stays buried under rofi
-// exactly as before. Cycling it forces a fresh map above rofi whatever state it
-// was in. SIGUSR1/SIGUSR2 are wvkbd's explicit hide and show - SIGRTMIN toggles,
-// which would depend on a visibility state nothing here tracks.
+// SIGUSR1/SIGUSR2 are wvkbd's explicit hide and show; SIGRTMIN toggles, which
+// would depend on a visibility state nothing here tracks. `wait` then puts the
+// keyboard away on rofi's own terms, so Escape and launching something both
+// clean up the same way.
 //
-// `wait` then puts the keyboard away on rofi's own terms, so Escape and
-// launching something both clean up the same way.
+// There is deliberately no close-if-open branch. rofi is a layer surface with no
+// wl_touch binding at all, so while it is up this button cannot be pressed - the
+// tap goes to rofi, which does nothing with it. Dismissal is handled where the
+// touch actually lands, by touch-click, which closes an open launcher when a tap
+// falls outside it. A toggle here would be dead code dressed up as a feature.
 const ROFI_OPEN =
     "rofi -show drun & p=$!; " +
     "sleep 0.25; " +
@@ -668,36 +664,22 @@ const ROFI_OPEN =
 
 function AppMenuButton() {
     let btn: Gtk.Widget | null = null
-    // rofi grabs the moment it maps, so the leave and release this button is
-    // waiting for never arrive and GTK holds the hover/pressed styling. Cleared
-    // by hand on press, and again once rofi is gone.
-    const clearState = () =>
-        btn?.unset_state_flags(Gtk.StateFlags.PRELIGHT | Gtk.StateFlags.ACTIVE)
-
     return (
         <button
             class="appmenu-btn"
             $={(self: Gtk.Widget) => { btn = self }}
             onClicked={() => {
-                clearState()
-                if (rofiOpen) {
-                    rofiOpen = false
-                    rofiClosedAt = Date.now()
-                    execAsync(["pkill", "-x", "rofi"]).catch(() => {})
-                    return
-                }
-                // The press that dismissed rofi by landing outside it. Opening
-                // again here is what made the button look stuck.
-                if (Date.now() - rofiClosedAt < 350) return
-
-                rofiOpen = true
-                execAsync(["sh", "-c", HAS_WVKBD ? ROFI_OPEN : "rofi -show drun"])
-                    .catch(() => {})
-                    .then(() => {
-                        rofiOpen = false
-                        rofiClosedAt = Date.now()
-                        clearState()
-                    })
+                // rofi grabs the moment it maps, so the leave and release this
+                // button is waiting for never arrive and GTK holds the hover and
+                // pressed styling - lit up for as long as rofi is open, and after.
+                btn?.unset_state_flags(
+                    Gtk.StateFlags.PRELIGHT | Gtk.StateFlags.ACTIVE
+                )
+                execAsync([
+                    "sh",
+                    "-c",
+                    HAS_WVKBD ? ROFI_OPEN : "rofi -show drun",
+                ]).catch(() => {})
             }}
         >
             <label label="Apps" />
