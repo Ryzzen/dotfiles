@@ -233,6 +233,18 @@ popover {
     color: #{"@on_surface_variant"};
 }
 
+// ── On-Screen Keyboard Button ───────────────────────────────
+
+.kbd-btn {
+    padding: 0 6px;
+    color: #{"@on_surface_variant"};
+    transition: all 200ms;
+
+    &:hover {
+        color: #{"@primary"};
+    }
+}
+
 // ── Power Button ────────────────────────────────────────────
 
 .power-btn {

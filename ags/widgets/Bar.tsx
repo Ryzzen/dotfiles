@@ -48,6 +48,7 @@ const ICON = {
     ANDROID:    "\u{f17b}",  // nf-fa-android
     // Power
     POWER:      "\u{f011}",  // nf-fa-power_off
+    KEYBOARD:   "\u{f030c}", // nf-md-keyboard
 }
 
 // ── Layout ─────────────────────────────────────────────────
@@ -956,6 +957,34 @@ function Clock({ connector, compact }: { connector: string; compact: boolean }) 
     )
 }
 
+// ── On-Screen Keyboard ──────────────────────────────────────
+
+// Toggles the resident wvkbd instance. This has to be reachable by touch: on a
+// detached tablet there is no physical keyboard to press a keybind with, which
+// makes a bar button the only way to summon the on-screen one - the chicken and
+// egg a keyboard shortcut cannot solve.
+//
+// Presence is decided by probing PATH for the binary, so the button appears
+// exactly on the hosts whose profile installs it. Gating on `compact` instead
+// would be wrong: a small external monitor on a laptop is narrow too, and would
+// get a button with nothing behind it.
+const HAS_WVKBD = GLib.find_program_in_path("wvkbd-mobintl") !== null
+
+function KeyboardButton() {
+    return (
+        <button
+            class="kbd-btn"
+            visible={HAS_WVKBD}
+            // SIGRTMIN is wvkbd's toggle (SIGUSR1/2 are the one-way hide/show).
+            // -x is safe here because wvkbd ships a bare ELF, not one of the
+            // wrapper scripts that would make the process name .foo-wrapped.
+            onClicked={() => execAsync(["pkill", "-SIGRTMIN", "-x", "wvkbd-mobintl"])}
+        >
+            <label label={ICON.KEYBOARD} />
+        </button>
+    )
+}
+
 // ── Power Button ────────────────────────────────────────────
 
 function PowerButton() {
@@ -1032,6 +1061,7 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                             <NetworkIndicator />
                             <BatteryIndicator />
                             <Clock connector={connector} compact={compact} />
+                            <KeyboardButton />
                             <PowerButton />
                         </box>
                     </box>
