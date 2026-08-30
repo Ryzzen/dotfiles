@@ -1123,36 +1123,29 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                             hugging the right, and anything that does not fit is
                             clipped off the LEFT - the stats go first, the clock and
                             power button stay. Drag it to bring them back. */}
+                        <RoundedAngle place="topleft" setup={(s) => { refs.angleR = s }} />
                         <overlay hexpand>
                         <scrolledwindow
+                            class="bar-right"
                             hexpand
                             propagateNaturalWidth={false}
                             hscrollbarPolicy={Gtk.PolicyType.EXTERNAL}
                             vscrollbarPolicy={Gtk.PolicyType.NEVER}
-                            kineticScrolling={false}
                             $={(self: Gtk.ScrolledWindow) => {
+                                refs.right = self
                                 const adj = self.get_hadjustment()
-                                const end = () =>
-                                    Math.max(0, adj.get_upper() - adj.get_page_size())
-                                // Pinned to the right-hand end, and kept there. The
-                                // panel is meant to look stationary with its content
-                                // running off under the fade, not to be draggable:
-                                // the background lives on the scrolled box, so any
-                                // real scroll slides the panel itself rather than its
-                                // contents, which reads as the whole bar coming
-                                // loose. Re-anchoring on both signals makes a drag a
-                                // no-op. Setting the value here re-enters
-                                // value-changed once and then matches, so it settles
-                                // rather than looping.
-                                adj.connect("changed", () => adj.set_value(end()))
-                                adj.connect("value-changed", () => {
-                                    if (adj.get_value() !== end()) adj.set_value(end())
+                                // Rest at the right-hand end, so the clock and power
+                                // button are what stay visible and the stats are what
+                                // run off under the fade. Only on "changed", which
+                                // fires for content and allocation - a drag emits
+                                // value-changed, and is deliberately left alone so
+                                // the hidden stats can be pulled back into view.
+                                adj.connect("changed", () => {
+                                    adj.set_value(Math.max(0, adj.get_upper() - adj.get_page_size()))
                                 })
                             }}
                         >
-                        <box halign={Gtk.Align.END}>
-                        <RoundedAngle place="topleft" setup={(s) => { refs.angleR = s }} />
-                        <box class="bar-right" $={(s: Gtk.Widget) => { refs.right = s }} spacing={compact ? 2 : 4}>
+                        <box halign={Gtk.Align.END} spacing={compact ? 2 : 4}>
                             <HardwareStats connector={connector} />
                             <AudioIndicator />
                             <BluetoothIndicator />
@@ -1160,7 +1153,6 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                             <BatteryIndicator />
                             <Clock connector={connector} compact={compact} />
                             <PowerButton />
-                        </box>
                         </box>
                         </scrolledwindow>
                         {/* Fades the clipped edge out instead of guillotining it, so
