@@ -835,7 +835,7 @@ function SysTray() {
 
 // ── Audio Indicator ─────────────────────────────────────────
 
-function AudioIndicator() {
+function AudioIndicator({ connector }: { connector: string }) {
     const wp = Wp.get_default()!
     const speaker = wp.audio.default_speaker!
     const volume = createBinding(speaker, "volume")
@@ -854,10 +854,32 @@ function AudioIndicator() {
         m ? ["bar-indicator", "muted"] : ["bar-indicator"]
     )
 
+    const toggleAudio = () => {
+        const win = app.get_window(`audio-popup-${connector}`)
+        if (win) win.visible = !win.visible
+    }
+
     return (
         <button
             cssClasses={cssClasses}
-            onClicked={() => execAsync("pavucontrol")}
+            onClicked={toggleAudio}
+            $={(self: Gtk.Widget) => {
+                // Scroll over the indicator to adjust, which is the gesture a
+                // volume control in a bar is expected to have. Clamped, because
+                // wireplumber will happily accept over-unity and blow the level
+                // out. Discrete steps rather than the raw delta: a mouse wheel
+                // reports ±1 per notch, and a touchpad's fractional deltas would
+                // otherwise crawl.
+                const scroll = new Gtk.EventControllerScroll({
+                    flags: Gtk.EventControllerScrollFlags.VERTICAL,
+                })
+                scroll.connect("scroll", (_c, _dx, dy) => {
+                    const step = dy > 0 ? -0.05 : 0.05
+                    speaker.volume = Math.max(0, Math.min(1, speaker.volume + step))
+                    return true
+                })
+                self.add_controller(scroll)
+            }}
         >
             <box spacing={4}>
                 <label label={icon} />
@@ -1180,7 +1202,7 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                             than exactly at it. */}
                         <box halign={Gtk.Align.END} spacing={compact ? 2 : 4} marginEnd={6}>
                             <HardwareStats connector={connector} />
-                            <AudioIndicator />
+                            <AudioIndicator connector={connector} />
                             <BluetoothIndicator />
                             <NetworkIndicator />
                             <BatteryIndicator />

@@ -315,6 +315,90 @@ popover {
 }
 
 // ═══════════════════════════════════════════════════════════
+//   AUDIO POPUP
+// ═══════════════════════════════════════════════════════════
+
+.AudioPopup {
+    background: transparent;
+}
+
+.ap-box {
+    background-color: #{"@surface"};
+    border: 1px solid #{"@outline_variant"};
+    border-radius: 12px;
+    padding: 12px;
+    min-width: 20rem;
+}
+
+.ap-title {
+    color: #{"@on_surface_variant"};
+    font-size: 0.65rem;
+}
+
+.ap-label {
+    color: #{"@on_surface"};
+    font-size: 0.7rem;
+}
+
+.ap-pct {
+    color: #{"@on_surface_variant"};
+    font-size: 0.65rem;
+}
+
+.ap-mute {
+    background-color: #{"@surface_container_high"};
+    border-radius: 8px;
+    // Square-ish and finger-sized. The bar can use icon-sized buttons because
+    // it is aimed at deliberately; a popup meant to replace pavucontrol on a
+    // touchscreen cannot.
+    min-width: 2rem;
+    min-height: 2rem;
+    color: #{"@on_surface"};
+
+    &:hover { background-color: #{"@primary_container"}; }
+}
+
+.ap-slider {
+    // Height is the touch target. A 2px trough looks tidy and is unusable with
+    // a thumb, which is the whole reason this widget exists.
+    min-height: 1.1rem;
+
+    trough {
+        background-color: #{"@surface_container_high"};
+        border-radius: 8px;
+        min-height: 0.5rem;
+    }
+
+    highlight {
+        background-color: #{"@primary"};
+        border-radius: 8px;
+        min-height: 0.5rem;
+    }
+
+    slider {
+        background-color: #{"@on_surface"};
+        border-radius: 50%;
+        min-width: 0.9rem;
+        min-height: 0.9rem;
+    }
+}
+
+.ap-device {
+    background-color: #{"@surface_container_high"};
+    color: #{"@on_surface"};
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 0.68rem;
+
+    &:hover { background-color: #{"@primary_container"}; }
+
+    &.active {
+        background-color: #{"@primary"};
+        color: #{"@on_primary"};
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
 //   LAUNCHER
 // ═══════════════════════════════════════════════════════════
 

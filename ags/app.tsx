@@ -8,6 +8,7 @@ import Bars from "./widgets/Bar"
 import SidePanel from "./widgets/SidePanel"
 import Launcher from "./widgets/Launcher"
 import HwPopup from "./widgets/HwPopup"
+import AudioPopup from "./widgets/AudioPopup"
 import CalendarPopup from "./widgets/CalendarPopup"
 
 const css = walCssDefines() + "\n" + style
@@ -19,6 +20,15 @@ function HwPopups() {
     return (
         <For each={monitors}>
             {(mon) => <HwPopup gdkmonitor={mon as Gdk.Monitor} />}
+        </For>
+    )
+}
+
+function AudioPopups() {
+    const monitors = createBinding(app, "monitors")
+    return (
+        <For each={monitors}>
+            {(mon) => <AudioPopup gdkmonitor={mon as Gdk.Monitor} />}
         </For>
     )
 }
@@ -69,6 +79,7 @@ app.start({
         Launcher()
         SidePanel(0)
         HwPopups()
+        AudioPopups()
         CalendarPopups()
     },
     requestHandler(argv: string[], response: (msg: string) => void) {
@@ -84,6 +95,9 @@ app.start({
         } else if (cmd === "toggle-sidepanel") {
             const win = app.get_window("sidepanel")
             if (win) win.visible = !win.visible
+            response("ok")
+        } else if (cmd === "toggle-audio") {
+            togglePopupOnFocusedMonitor("audio-popup")
             response("ok")
         } else if (cmd === "toggle-hw-popup") {
             togglePopupOnFocusedMonitor("hw-popup")
