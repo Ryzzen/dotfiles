@@ -1109,7 +1109,37 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
 
                     {/* ── Right: angle + indicators + clock ── */}
                     <box $type="end">
-                        <box hexpand />
+                        {/* The right section is the one that yields. Everything here
+                            has a natural width that grows with content - another
+                            workspace, a longer clock - and when the total passed the
+                            panel width the whole bar grew with it and the compositor
+                            cut the last widgets off the screen edge. The power button
+                            was the casualty, which is the worst one to lose.
+
+                            propagateNaturalWidth={false} is what fixes that: the
+                            viewport stops advertising its child's full width, so the
+                            bar can no longer be pushed wider than the screen. It
+                            claims the leftover space with hexpand, keeps its content
+                            hugging the right, and anything that does not fit is
+                            clipped off the LEFT - the stats go first, the clock and
+                            power button stay. Drag it to bring them back. */}
+                        <scrolledwindow
+                            hexpand
+                            propagateNaturalWidth={false}
+                            hscrollbarPolicy={Gtk.PolicyType.EXTERNAL}
+                            vscrollbarPolicy={Gtk.PolicyType.NEVER}
+                            $={(self: Gtk.ScrolledWindow) => {
+                                // Park at the right-hand end whenever the content or
+                                // the space for it changes. "changed" fires on those,
+                                // not on scrolling, so this re-anchors after a layout
+                                // change without fighting a drag in progress.
+                                const adj = self.get_hadjustment()
+                                adj.connect("changed", () => {
+                                    adj.set_value(Math.max(0, adj.get_upper() - adj.get_page_size()))
+                                })
+                            }}
+                        >
+                        <box halign={Gtk.Align.END}>
                         <RoundedAngle place="topleft" setup={(s) => { refs.angleR = s }} />
                         <box class="bar-right" $={(s: Gtk.Widget) => { refs.right = s }} spacing={compact ? 2 : 4}>
                             <HardwareStats connector={connector} />
@@ -1120,6 +1150,8 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                             <Clock connector={connector} compact={compact} />
                             <PowerButton />
                         </box>
+                        </box>
+                        </scrolledwindow>
                     </box>
                 </centerbox>
                 <BorderOverlay connector={connector} $type="overlay" />
