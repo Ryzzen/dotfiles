@@ -180,8 +180,17 @@ export default function WifiPopup({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                     >
                         <For each={points}>
                             {(ap: Network.AccessPoint) => {
+                                // Matched by name, not BSSID. The list keeps one
+                                // row per network - the strongest radio of each -
+                                // but the radio actually associated is often a
+                                // different one, so comparing BSSIDs marked the
+                                // connected network as unconnected. Worse, it did
+                                // so intermittently: as signal strengths drift the
+                                // dedupe picks a different BSSID and the highlight
+                                // appears and vanishes on its own.
+                                const key = ap.ssid || ap.bssid
                                 const active = activeAp
-                                    ? activeAp((a) => a?.bssid === ap.bssid)
+                                    ? activeAp((a) => !!a && (a.ssid || a.bssid) === key)
                                     : null
                                 const isPending = pending((p) => p?.bssid === ap.bssid)
                                 let rowEntry: Gtk.Entry | null = null

@@ -314,6 +314,26 @@ popover {
     .power-btn { padding: 0 3px; }
 }
 
+// Hover has to be hue-free, and on this machine it also has to survive being
+// permanent. Two things conspire:
+//
+//   - every wal colourN is a hue, so reaching for one - @primary_container,
+//     @surface_bright - paints hover in an accent indistinguishable from the
+//     accent that marks real state. Only the background-lightened tokens are
+//     neutral, and they are already in use as the resting colours.
+//   - touch-click positions the cursor where the finger landed and leaves it
+//     there, so the widget under it keeps :hover indefinitely. The pointer
+//     really is on it; this is not a stale flag that clearing state can fix.
+//
+// So hover is a translucent wash of the foreground over whatever the widget's
+// own background is: visible, hue-free, and harmless when it sticks.
+@mixin hover-wash($amount: 0.10) {
+    background-image: linear-gradient(
+        #{"alpha(@on_surface, #{$amount})"},
+        #{"alpha(@on_surface, #{$amount})"}
+    );
+}
+
 // ═══════════════════════════════════════════════════════════
 //   WIFI POPUP
 // ═══════════════════════════════════════════════════════════
@@ -347,7 +367,7 @@ popover {
     min-width: 1.8rem;
     min-height: 1.8rem;
 
-    &:hover { background-color: #{"@primary_container"}; }
+    &:hover { @include hover-wash; }
 }
 
 // Each row is a touch target, so it gets height rather than the tight line
@@ -363,7 +383,7 @@ popover {
     padding: 8px 10px;
     color: #{"@on_surface"};
 
-    &:hover { background-color: #{"@surface_bright"}; }
+    &:hover { @include hover-wash; }
 
     // No :focus rule on purpose. GTK keeps focus on the last activated button,
     // which would pin a highlight to it for as long as the popup is open.
@@ -479,7 +499,7 @@ popover {
     min-height: 2rem;
     color: #{"@on_surface"};
 
-    &:hover { background-color: #{"@primary_container"}; }
+    &:hover { @include hover-wash; }
 }
 
 .ap-slider {
@@ -514,7 +534,7 @@ popover {
     padding: 7px 10px;
     font-size: 0.68rem;
 
-    &:hover { background-color: #{"@primary_container"}; }
+    &:hover { @include hover-wash; }
 
     &.active {
         background-color: #{"@primary"};
@@ -578,16 +598,15 @@ popover {
     // careful tap; a list being scrolled through with a thumb cannot.
     padding: 8px 10px;
 
-    &:hover {
-        background-color: #{"@surface_container_high"};
-    }
+    &:hover { @include hover-wash; }
 
-    // Accented like rofi's selected row, which used its bg3 - colour3 in this
-    // palette, the same source @primary_container reads from.
+    // No accent on focus. GTK keeps focus on the last activated row, which would
+    // pin a highlight there; and with the cursor parked where the finger landed,
+    // an accent-coloured hover reads as a selection that was never made.
     &:focus,
     &:active {
         outline-style: none;
-        background-color: #{"@primary_container"};
+        @include hover-wash(0.14);
     }
 }
 
