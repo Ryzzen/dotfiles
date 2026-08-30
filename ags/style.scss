@@ -330,12 +330,36 @@ popover {
     min-width: 26rem;
 }
 
+// Everything here is wal-derived, same as the bar and same as rofi's theme was
+// (its bg0/bg3 are this palette's background and colour3). The one thing that
+// did NOT follow the palette was GTK's own focus ring, which is a stock blue
+// drawn on top regardless of the stylesheet - hence outline-style: none and a
+// border in @primary instead, so a focused entry is accented in the wallpaper's
+// colour rather than GTK's.
 .launcher-entry {
     background-color: #{"@surface_container_high"};
     color: #{"@on_surface"};
+    caret-color: #{"@primary"};
+    border: 1px solid #{"@outline_variant"};
     border-radius: 8px;
     padding: 6px 10px;
     font-size: 0.8rem;
+
+    &:focus,
+    &:focus-within {
+        outline-style: none;
+        border-color: #{"@primary"};
+    }
+
+    // Placeholder and selection, which otherwise fall back to theme defaults.
+    > text > placeholder {
+        color: #{"@on_surface_variant"};
+    }
+
+    selection {
+        background-color: #{"@primary"};
+        color: #{"@on_primary"};
+    }
 }
 
 .launcher-item {
@@ -348,6 +372,14 @@ popover {
 
     &:hover {
         background-color: #{"@surface_container_high"};
+    }
+
+    // Accented like rofi's selected row, which used its bg3 - colour3 in this
+    // palette, the same source @primary_container reads from.
+    &:focus,
+    &:active {
+        outline-style: none;
+        background-color: #{"@primary_container"};
     }
 }
 

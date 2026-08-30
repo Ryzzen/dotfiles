@@ -73,7 +73,15 @@ app.start({
     },
     requestHandler(argv: string[], response: (msg: string) => void) {
         const [cmd] = argv
-        if (cmd === "toggle-sidepanel") {
+        if (cmd === "toggle-launcher") {
+            // Reachable from a Hyprland keybind, which cannot poke a widget
+            // directly. Deliberately does NOT raise the on-screen keyboard: the
+            // bar button does that because a tap implies no physical keyboard,
+            // whereas anyone pressing this shortcut just used one.
+            const win = app.get_window("launcher")
+            if (win) win.visible = !win.visible
+            response("ok")
+        } else if (cmd === "toggle-sidepanel") {
             const win = app.get_window("sidepanel")
             if (win) win.visible = !win.visible
             response("ok")
