@@ -1165,24 +1165,42 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                     <box $type="end">
                         {/* The right section is the one that yields. Everything here
                             has a natural width that grows with content - another
-                            workspace, a longer clock - and when the total passed the
+                            indicator, a longer clock - and when the total passed the
                             panel width the whole bar grew with it and the compositor
                             cut the last widgets off the screen edge. The power button
                             was the casualty, which is the worst one to lose.
 
-                            propagateNaturalWidth={false} is what fixes that: the
-                            viewport stops advertising its child's full width, so the
-                            bar can no longer be pushed wider than the screen. It
-                            claims the leftover space with hexpand, keeps its content
-                            hugging the right, and anything that does not fit is
-                            clipped off the LEFT - the stats go first, the clock and
-                            power button stay. Drag it to bring them back. */}
+                            The scrolledwindow is what stops that, but it must not
+                            claim the leftover space either, or the panel becomes a
+                            fixed slab running from the centre section to the screen
+                            edge whatever is in it. So: no hexpand, and
+                            propagate-natural-width explicitly ON. That property
+                            defaults to FALSE - leaving it off is what collapses the
+                            viewport to nothing without an hexpand to prop it up, and
+                            turning it on is the whole trick here. Measured: nat goes
+                            8 -> 573, alloc 0 -> 573.
+
+                            The upper bound then comes free from GtkCenterBox, which
+                            allocates its end child CLAMP((width - centre)/2, min,
+                            nat) - and (width - centre)/2 is exactly the gap from the
+                            centre section's right edge to the screen edge. So the
+                            natural width is honoured while it fits and truncated to
+                            that gap once it does not. The viewport's own minimum
+                            stays ~8px (any hscrollbar policy other than NEVER), so
+                            the shrink is free and the bar can never be pushed wider
+                            than the panel.
+
+                            Past that point the clip takes over: content runs off the
+                            LEFT under the fade - the stats go first, the clock and
+                            power button stay - and dragging brings them back. The
+                            background is on the viewport rather than the scrolled
+                            box, so the panel itself stays put while its contents
+                            slide. */}
                         <RoundedAngle place="topleft" setup={(s) => { refs.angleR = s }} />
-                        <overlay hexpand>
+                        <overlay>
                         <scrolledwindow
                             class="bar-right"
-                            hexpand
-                            propagateNaturalWidth={false}
+                            propagateNaturalWidth
                             hscrollbarPolicy={Gtk.PolicyType.EXTERNAL}
                             vscrollbarPolicy={Gtk.PolicyType.NEVER}
                             $={(self: Gtk.ScrolledWindow) => {
@@ -1222,10 +1240,10 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                             which is exactly where the clip falls once the content
                             overflows.
 
-                            Hidden while everything fits: with the content aligned
-                            right, the left of the viewport is empty in that case and
-                            the gradient would just smear panel colour across bare
-                            wallpaper. */}
+                            Hidden while everything fits: the viewport is then
+                            exactly its content's width and its left edge is the
+                            angle's, so the gradient would only wash out the first
+                            widget for no reason. */}
                         <box
                             class="bar-right-fade"
                             $type="overlay"
