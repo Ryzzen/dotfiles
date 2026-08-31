@@ -1128,6 +1128,14 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
     }
     barRefs.set(connector, refs)
 
+    // The overflow fade is owned by the scrolledwindow's adjustment but lives
+    // in a sibling widget, and a JSX `$` callback runs while the widget is
+    // still parentless - `self.get_parent()` is null in there. So the fade
+    // cannot find the adjustment from its own setup; the scrolledwindow hands
+    // it over instead, through these two.
+    let fadeBox: Gtk.Widget | null = null
+    let syncFade = () => {}
+
     return (
         <window
             visible
@@ -1215,6 +1223,14 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                                 adj.connect("changed", () => {
                                     adj.set_value(Math.max(0, adj.get_upper() - adj.get_page_size()))
                                 })
+                                // Show the fade only while the content really is
+                                // clipped. upper is the content's width and
+                                // page_size the viewport's, so they are equal
+                                // exactly when everything fits; the +1 absorbs
+                                // sub-pixel allocation noise.
+                                syncFade = () =>
+                                    fadeBox?.set_visible(adj.get_upper() > adj.get_page_size() + 1)
+                                adj.connect("changed", syncFade)
                             }}
                         >
                         {/* marginEnd is clearance for the last widget. Resting at
@@ -1243,7 +1259,9 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                             Hidden while everything fits: the viewport is then
                             exactly its content's width and its left edge is the
                             angle's, so the gradient would only wash out the first
-                            widget for no reason. */}
+                            widget for no reason. Driven from the scrolledwindow's
+                            setup - see fadeBox/syncFade above for why it cannot be
+                            done from here. */}
                         <box
                             class="bar-right-fade"
                             $type="overlay"
@@ -1252,13 +1270,12 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                             canTarget={false}
                             widthRequest={26}
                             $={(self: Gtk.Widget) => {
-                                const sw = self.get_parent()?.get_first_child() as Gtk.ScrolledWindow
-                                const adj = sw?.get_hadjustment?.()
-                                if (!adj) return
-                                const sync = () =>
-                                    self.set_visible(adj.get_upper() > adj.get_page_size() + 1)
-                                adj.connect("changed", sync)
-                                sync()
+                                // Hidden until an allocation proves otherwise, so a
+                                // panel that fits never flashes a gradient over its
+                                // first widget on the way up.
+                                self.set_visible(false)
+                                fadeBox = self
+                                syncFade()
                             }}
                         />
                         </overlay>
