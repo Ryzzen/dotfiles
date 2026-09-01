@@ -1132,9 +1132,162 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
     // in a sibling widget, and a JSX `$` callback runs while the widget is
     // still parentless - `self.get_parent()` is null in there. So the fade
     // cannot find the adjustment from its own setup; the scrolledwindow hands
-    // it over instead, through these two.
-    let fadeBox: Gtk.Widget | null = null
-    let syncFade = () => {}
+    // it over instead, through these. One pair per side.
+    let fadeBoxL: Gtk.Widget | null = null
+    let syncFadeL = () => {}
+    let fadeBoxR: Gtk.Widget | null = null
+    let syncFadeR = () => {}
+
+    // The scrolled content of each panel, kept so its natural width can be
+    // measured without the clamp below reading its own output back.
+    let contentL: Gtk.Widget | null = null
+    let contentR: Gtk.Widget | null = null
+    // The centre's viewport and the workspaces inside it, same reasoning.
+    let wsView: Gtk.ScrolledWindow | null = null
+    let wsContent: Gtk.Widget | null = null
+
+    // Both panels are bounded by the centre section, and bounded identically on
+    // purpose: the centre can only sit in the middle of the bar if the space
+    // either side of it is the same, so each panel is capped at half the leftover
+    // and pinned rigid at whatever it actually uses. Add a workspace and the
+    // centre's natural width grows, both caps shrink by the same amount, and the
+    // centre spreads evenly in both directions instead of walking sideways.
+    //
+    // Rigid - min == nat - is the operative part, and it is not optional.
+    // GtkCenterBox lays its three children out in sequence only while they all
+    // fit; give it a child that can still shrink and it hands that child its full
+    // natural width and lays the others over it. Probed with an over-long title:
+    // start 746 @x=0, centre 334 @x=746, end 523 @x=677 - the right panel drawn
+    // straight over the workspaces, which simply vanished. Pinning both sides at
+    // or under their cap keeps the total inside the bar, which is also the only
+    // case where GtkCenterBox centres its centre child at all.
+    //
+    // The natural width is read off the content box and never off the
+    // scrolledwindow, because the scrolledwindow's is exactly what is being
+    // clamped here - measuring that back would latch each panel at its widest and
+    // it would never shrink again. Both panels carry their inset inside the
+    // viewport (.bar-right-inner) precisely so the two are the same number and
+    // there is no chrome to subtract.
+    const clampPanel = (sw: Gtk.ScrolledWindow | null, content: Gtk.Widget | null) => {
+        const centre = refs.angleCL?.get_parent()
+        const bar = centre?.get_parent()
+        if (!sw || !content || !centre || !bar) return
+        // The monitor's logical width, not the centerbox's allocation. Those agree
+        // while things fit, but the moment the sections add up to more than the
+        // screen the centerbox is allocated the overflow too - measured 1200 ->
+        // 1213 -> 1259 as workspaces were added - and computing the cap from that
+        // asks the panels to fit inside a bar wider than the screen, which is the
+        // state we are trying to get out of. The window is anchored left and right,
+        // so the monitor width is what the bar actually is.
+        const barW = monWidth > 0 ? monWidth : bar.get_width()
+        // Natural, not allocated: mid-relayout the centre can be sitting squeezed,
+        // and sizing the panels off that number would hold it squeezed. The centre
+        // is the one section that never gives anything up - it keeps its natural
+        // width and the two panels are what shrink around it.
+        const centreW = centre.measure(Gtk.Orientation.HORIZONTAL, -1)[1]
+        if (barW <= 0 || centreW <= 0) return
+        // Half the space either side of the centre, less the angle that shares the
+        // section with the viewport.
+        const cap = Math.max(0, Math.floor((barW - centreW) / 2) - ANGLE_W)
+        const w = Math.min(content.measure(Gtk.Orientation.HORIZONTAL, -1)[1], cap)
+        // max-content-width caps the natural width, the size request pins the
+        // minimum to the same number, and min == nat is what makes the section
+        // rigid. Guarded so this settles: each set re-triggers the layout that
+        // called us, and the second pass computes the same numbers and stops here.
+        if (sw.get_max_content_width() !== cap) sw.set_max_content_width(cap)
+        if (sw.get_size_request()[0] !== w) sw.set_size_request(w, -1)
+    }
+    // Either panel changing can change what the other one is allowed, so both are
+    // re-clamped together whichever side moved - and off an idle rather than
+    // inline. The adjustment fires from inside GTK's allocate pass, and pushing a
+    // new size request back into a layout already in flight makes GTK allocate a
+    // section against a measurement it has just invalidated ("Allocation width too
+    // small. Tried to allocate 48x30, but GtkBox needs at least 433x30" on the
+    // first frame). One pending pass at a time; it re-arms on the next change.
+    let clampQueued = false
+    const clampPanels = () => {
+        if (clampQueued) return
+        clampQueued = true
+        GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+            clampQueued = false
+            clampPanel(refs.left as Gtk.ScrolledWindow | null, contentL)
+            clampPanel(refs.right as Gtk.ScrolledWindow | null, contentR)
+            return GLib.SOURCE_REMOVE
+        })
+    }
+    // The panels' own adjustments cover everything that happens inside a panel,
+    // but not the thing the caps are actually computed from. When the centre
+    // widens - a workspace appears, or a ws-button's label follows its last client
+    // - the panels are already pinned rigid, so nothing about them changes and no
+    // adjustment fires; the bar just quietly grows past the screen edge (measured
+    // 1200 -> 1259 over two workspaces). GTK4 has no size-allocate signal to hang
+    // this off, and the centre's width moves for reasons no signal on the sides
+    // reports, so it is polled. The work is three cached measures and two integer
+    // compares, and it does nothing at all unless a number moved.
+    // Growth is eased, not snapped. The number every section is computed from is
+    // the centre's width, so easing that one value carries the whole bar with it:
+    // the centre spreads from the middle and both panels give up the same amount
+    // over the same curve. Only this is eased - a panel's own content changing
+    // still resizes it at once, because the hardware stats change width every
+    // second and easing those would leave the right-hand edge permanently drifting.
+    const CENTRE_ANIM_US = 180_000
+    let centreW = -1          // eased width of the workspaces viewport
+    let centreFrom = 0
+    let centreTo = -1
+    let centreT0 = 0
+    let centreTick = 0
+
+    const applyCentre = (w: number) => {
+        if (!wsView) return
+        const v = Math.round(w)
+        if (wsView.get_max_content_width() !== v) wsView.set_max_content_width(v)
+        if (wsView.get_size_request()[0] !== v) wsView.set_size_request(v, -1)
+        clampPanels()
+    }
+
+    const centreStep = () => {
+        const t = (GLib.get_monotonic_time() - centreT0) / CENTRE_ANIM_US
+        if (t >= 1) {
+            centreW = centreTo
+            applyCentre(centreW)
+            centreTick = 0
+            return GLib.SOURCE_REMOVE
+        }
+        centreW = centreFrom + (centreTo - centreFrom) * easeInOutSine(t)
+        applyCentre(centreW)
+        return GLib.SOURCE_CONTINUE
+    }
+
+    // Retarget whenever the workspaces' own natural width moves. Measured off the
+    // content box, which is never constrained - the viewport is what is being
+    // driven, so reading its width back would just return the last frame of the
+    // animation and the target would chase itself.
+    const retargetCentre = () => {
+        if (!wsContent) return
+        const nat = wsContent.measure(Gtk.Orientation.HORIZONTAL, -1)[1]
+        if (nat <= 0 || nat === centreTo) return
+        if (centreW < 0) {
+            // First layout: land on it rather than animating up from nothing.
+            centreW = nat
+            centreTo = nat
+            applyCentre(nat)
+            return
+        }
+        centreFrom = centreW
+        centreTo = nat
+        centreT0 = GLib.get_monotonic_time()
+        if (!centreTick) {
+            centreTick = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 16, centreStep)
+        }
+    }
+
+    // 50ms rather than something slower: this is also what notices a workspace
+    // appearing, and the poll interval is dead time in front of the animation.
+    GLib.timeout_add(GLib.PRIORITY_DEFAULT_IDLE, 50, () => {
+        retargetCentre()
+        clampPanels()
+        return GLib.SOURCE_CONTINUE
+    })
 
     return (
         <window
@@ -1152,20 +1305,150 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                 <centerbox class="bar-inner">
                     {/* ── Left: appmenu + quicklinks + tray + title + angle ── */}
                     <box $type="start">
-                        <box class="bar-left" $={(s: Gtk.Widget) => { refs.left = s }} spacing={compact ? 2 : 4}>
+                        {/* Mirror of the right section, and for the same reason: the
+                            content here grows with what is running - another tray
+                            icon, a longer window title - and past a point it pushed
+                            the whole bar wider than the screen and drove the centre
+                            section off. The workspaces are the worst thing to lose.
+
+                            Same construction, reflected. No hexpand and
+                            propagate-natural-width explicitly ON (it defaults to
+                            FALSE, and leaving it off collapses the viewport to
+                            nothing), so the panel hugs its content.
+
+                            The upper bound is the one part that is not free here.
+                            GtkCenterBox gives its END child the leftover space, which
+                            is what bounds the right panel, but it hands its START
+                            child the full natural width - so an over-long title took
+                            746px and the right panel, still flush against the screen
+                            edge, was laid straight over the workspaces. maxContentWidth
+                            supplies the missing clamp; see clampToCentre below.
+
+                            Past that point the clip takes over, and here it falls on
+                            the RIGHT - the title goes first, the app menu and
+                            quicklinks stay - with the overflow dissolving under the
+                            fade toward the centre. The background is on the viewport
+                            rather than the scrolled box, so the panel holds still
+                            while its contents slide. */}
+                        <overlay>
+                        <scrolledwindow
+                            class="bar-left"
+                            propagateNaturalWidth
+                            hscrollbarPolicy={Gtk.PolicyType.EXTERNAL}
+                            vscrollbarPolicy={Gtk.PolicyType.NEVER}
+                            $={(self: Gtk.ScrolledWindow) => {
+                                refs.left = self
+                                const adj = self.get_hadjustment()
+                                // Rest at the left-hand end - the mirror of the right
+                                // panel's anchor - so the app menu and quicklinks are
+                                // what stay visible and the title is what runs off
+                                // under the fade. Only on "changed", which fires for
+                                // content and allocation; a drag emits value-changed
+                                // and is left alone so the hidden end can be pulled
+                                // back into view.
+                                adj.connect("changed", () => adj.set_value(0))
+                                adj.connect("changed", clampPanels)
+                                // Show the fade only while the content really is
+                                // clipped. upper is the content's width and
+                                // page_size the viewport's, so they are equal
+                                // exactly when everything fits; the +1 absorbs
+                                // sub-pixel allocation noise.
+                                syncFadeL = () =>
+                                    fadeBoxL?.set_visible(adj.get_upper() > adj.get_page_size() + 1)
+                                adj.connect("changed", syncFadeL)
+                            }}
+                        >
+                        {/* No trailing margin, unlike the right panel. That one
+                            needs it because it rests at its end stop, so the power
+                            button sits flush against the viewport edge and gets
+                            shaved. This one rests at 0, and the end it can be dragged
+                            to is the faded one - anything shaved there is under the
+                            gradient already. The 6px is better left to the right
+                            panel, which is the section that gives up the space. */}
+                        <box
+                            halign={Gtk.Align.START}
+                            spacing={compact ? 2 : 4}
+                            $={(s: Gtk.Widget) => { contentL = s }}
+                        >
                             <AppMenuButton />
                             <KeyboardButton />
                             <QuickLinks />
                             <SysTray />
                             <FocusedTitle />
                         </box>
+                        </scrolledwindow>
+                        {/* Fades the clipped edge out instead of guillotining it, so
+                            content that does not fit dissolves into the bar rather
+                            than stopping mid-glyph. Sits at the viewport's right
+                            edge, which is exactly where the clip falls once the
+                            content overflows - facing the centre section, the
+                            opposite way round from the right panel's fade.
+
+                            Hidden while everything fits: the viewport is then
+                            exactly its content's width and its right edge is the
+                            angle's, so the gradient would only wash out the last
+                            widget for no reason. Driven from the scrolledwindow's
+                            setup - see fadeBoxL/syncFadeL above for why it cannot
+                            be done from here. */}
+                        <box
+                            class="bar-left-fade"
+                            $type="overlay"
+                            halign={Gtk.Align.END}
+                            valign={Gtk.Align.FILL}
+                            canTarget={false}
+                            widthRequest={26}
+                            $={(self: Gtk.Widget) => {
+                                // Hidden until an allocation proves otherwise, so a
+                                // panel that fits never flashes a gradient over its
+                                // last widget on the way up.
+                                self.set_visible(false)
+                                fadeBoxL = self
+                                syncFadeL()
+                            }}
+                        />
+                        </overlay>
                         <RoundedAngle place="topright" setup={(s) => { refs.angleL = s }} />
                     </box>
 
                     {/* ── Center: workspaces ── */}
                     <box $type="center">
                         <RoundedAngle place="topleft" setup={(s) => { refs.angleCL = s }} />
-                        <Workspaces compact={compact} />
+                        {/* The workspaces sit in a viewport purely so the centre can
+                            be animated. Everything else on the bar is derived from
+                            this section's width, so when a workspace appears the
+                            centre and both panels would otherwise resize inside a
+                            single frame; easing that means the centre has to spend
+                            the ~180ms below narrower than its content, and a plain
+                            GtkBox allocated under its minimum prints a critical every
+                            frame it is. A viewport just clips.
+
+                            It is not a scrolling panel like the two on the ends: no
+                            fade, no cap, and the adjustment is pinned to the middle
+                            of the content rather than to an edge, so the growth
+                            reveals evenly on both sides and a drag cannot push a
+                            workspace out of sight. At rest it is exactly its
+                            content's natural width - the centre is the one section
+                            that never gives anything up. */}
+                        <scrolledwindow
+                            propagateNaturalWidth
+                            hscrollbarPolicy={Gtk.PolicyType.EXTERNAL}
+                            vscrollbarPolicy={Gtk.PolicyType.NEVER}
+                            kineticScrolling={false}
+                            $={(self: Gtk.ScrolledWindow) => {
+                                wsView = self
+                                const adj = self.get_hadjustment()
+                                const mid = () =>
+                                    Math.max(0, (adj.get_upper() - adj.get_page_size()) / 2)
+                                adj.connect("changed", () => adj.set_value(mid()))
+                                adj.connect("value-changed", () => {
+                                    if (adj.get_value() !== mid()) adj.set_value(mid())
+                                })
+                            }}
+                        >
+                        <box $={(s: Gtk.Widget) => { wsContent = s }}>
+                            <Workspaces compact={compact} />
+                        </box>
+                        </scrolledwindow>
                         <RoundedAngle place="topright" setup={(s) => { refs.angleCR = s }} />
                     </box>
 
@@ -1223,14 +1506,23 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                                 adj.connect("changed", () => {
                                     adj.set_value(Math.max(0, adj.get_upper() - adj.get_page_size()))
                                 })
+                                // Bounded by the centre section the same way the
+                                // left panel is - see clampPanels. This used to come
+                                // free from GtkCenterBox, which shrinks its END child
+                                // to whatever is left over, but "whatever is left
+                                // over" is the wrong number now: it is measured after
+                                // the start child has taken its share, so the centre
+                                // ended up wherever the left panel happened to leave
+                                // it rather than in the middle of the bar.
+                                adj.connect("changed", clampPanels)
                                 // Show the fade only while the content really is
                                 // clipped. upper is the content's width and
                                 // page_size the viewport's, so they are equal
                                 // exactly when everything fits; the +1 absorbs
                                 // sub-pixel allocation noise.
-                                syncFade = () =>
-                                    fadeBox?.set_visible(adj.get_upper() > adj.get_page_size() + 1)
-                                adj.connect("changed", syncFade)
+                                syncFadeR = () =>
+                                    fadeBoxR?.set_visible(adj.get_upper() > adj.get_page_size() + 1)
+                                adj.connect("changed", syncFadeR)
                             }}
                         >
                         {/* marginEnd is clearance for the last widget. Resting at
@@ -1240,7 +1532,13 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                             taper. Trailing margin inside the scrolled content means
                             the end of the scroll is a few px past the button rather
                             than exactly at it. */}
-                        <box halign={Gtk.Align.END} spacing={compact ? 2 : 4} marginEnd={6}>
+                        <box
+                            class="bar-right-inner"
+                            halign={Gtk.Align.END}
+                            spacing={compact ? 2 : 4}
+                            marginEnd={6}
+                            $={(s: Gtk.Widget) => { contentR = s }}
+                        >
                             <HardwareStats connector={connector} />
                             <AudioIndicator connector={connector} />
                             <BluetoothIndicator connector={connector} />
@@ -1260,8 +1558,8 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                             exactly its content's width and its left edge is the
                             angle's, so the gradient would only wash out the first
                             widget for no reason. Driven from the scrolledwindow's
-                            setup - see fadeBox/syncFade above for why it cannot be
-                            done from here. */}
+                            setup - see fadeBoxR/syncFadeR above for why it cannot
+                            be done from here. */}
                         <box
                             class="bar-right-fade"
                             $type="overlay"
@@ -1274,8 +1572,8 @@ function Bar({ gdkmonitor }: { gdkmonitor: Gdk.Monitor }) {
                                 // panel that fits never flashes a gradient over its
                                 // first widget on the way up.
                                 self.set_visible(false)
-                                fadeBox = self
-                                syncFade()
+                                fadeBoxR = self
+                                syncFadeR()
                             }}
                         />
                         </overlay>

@@ -58,6 +58,15 @@ window.Bar {
 
 .bar-right {
     background-color: #{"@surface"};
+}
+
+// Inset lives on the scrolled content, not on the panel. The panel's width is
+// computed against the centre section (clampPanel in Bar.tsx) and padding on the
+// scrolledwindow itself is chrome outside the viewport, so it would have to be
+// measured off the allocation and subtracted back out on every pass - which
+// oscillates while the two allocations chase each other. Inside the viewport it
+// is just part of the content's natural width.
+.bar-right-inner {
     padding: 0 4px;
 }
 
@@ -233,12 +242,25 @@ popover {
     color: #{"@on_surface_variant"};
 }
 
-// ── Right panel fade ────────────────────────────────────────
+// ── Side panel fades ────────────────────────────────────────
 //
-// Covers the clipped edge of .bar-right with the panel's own colour, fading to
-// nothing across ~26px, so overflowing content dissolves instead of being cut
-// mid-character. alpha() rather than `transparent` keeps the fade in the panel's
-// hue the whole way across; fading towards a transparent black would grey it.
+// Covers the clipped edge of .bar-left / .bar-right with the panel's own colour,
+// fading to nothing across ~26px, so overflowing content dissolves instead of
+// being cut mid-character. alpha() rather than `transparent` keeps the fade in
+// the panel's hue the whole way across; fading towards a transparent black would
+// grey it.
+//
+// The two are mirror images: each panel clips on the side facing the centre, so
+// the solid end of the gradient is the panel's outer edge and the transparent
+// end is the one pointing inward.
+.bar-left-fade {
+    background-image: linear-gradient(
+        to right,
+        #{"alpha(@surface, 0)"},
+        #{"alpha(@surface, 1)"}
+    );
+}
+
 .bar-right-fade {
     background-image: linear-gradient(
         to right,
@@ -307,7 +329,7 @@ popover {
         padding-left: 4px;
     }
 
-    .bar-right { padding: 0 2px; }
+    .bar-right-inner { padding: 0 2px; }
 
     .clock-container { padding-right: 4px; }
 
