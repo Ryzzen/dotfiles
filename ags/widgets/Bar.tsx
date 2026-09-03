@@ -746,8 +746,19 @@ function Workspaces({ compact }: { compact: boolean }) {
                     // recently focused) client. AstalHyprland updates
                     // `lastClient` as the user switches windows inside the
                     // workspace, so this tracks "what's on top" live.
-                    const title = createBinding(ws, "lastClient").as((c) =>
-                        wsTitleFromClass(c?.class)
+                    // lastClient is resolved from the workspace's `lastwindow`
+                    // address against AstalHyprland's own client map, so it comes
+                    // back null whenever that map has not picked the window up -
+                    // which leaves a workspace holding a window but showing no
+                    // name, even once focused. Fall back to whatever else is on
+                    // the workspace so a pill with windows always has a label.
+                    const title = createComputed(
+                        [
+                            createBinding(ws, "lastClient"),
+                            createBinding(ws, "clients"),
+                        ],
+                        (last, clients) =>
+                            wsTitleFromClass(last?.class ?? clients?.[0]?.class)
                     )
                     // The app-name half of each pill is the single biggest
                     // consumer of width in the centre section - four open
