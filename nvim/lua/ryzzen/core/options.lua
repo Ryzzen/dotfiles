@@ -38,7 +38,11 @@ opt.swapfile = false
 -- disable modelines: STM32CubeMX generates an `ex: printf(...)` comment in
 -- assert_failed() that Vim misreads as a modeline (E518), which aborts
 -- auto-session restore. Also a known security footgun. We don't rely on them.
+-- modelines=0 (line-scan count, a *global* opt) is the robust switch: sessions
+-- restore `setlocal modeline` per buffer, which would override a bare
+-- `modeline=false`, but with zero lines scanned no modeline is ever parsed.
 opt.modeline = false
+opt.modelines = 0
 
 -- sessions (auto-session): include localoptions so filetype/highlighting are
 -- restored directly instead of re-detected (which re-runs modelines on every
