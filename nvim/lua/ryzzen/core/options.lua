@@ -35,6 +35,11 @@ opt.splitbelow = true -- split horizontal window to the bottom
 -- turn off swapfile
 opt.swapfile = false
 
+-- disable modelines: STM32CubeMX generates an `ex: printf(...)` comment in
+-- assert_failed() that Vim misreads as a modeline (E518), which aborts
+-- auto-session restore. Also a known security footgun. We don't rely on them.
+opt.modeline = false
+
 -- sessions (auto-session): include localoptions so filetype/highlighting are
 -- restored directly instead of re-detected (which re-runs modelines on every
 -- restored buffer). This is auto-session's own recommended value.
