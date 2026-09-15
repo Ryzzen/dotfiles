@@ -34,3 +34,8 @@ opt.splitbelow = true -- split horizontal window to the bottom
 
 -- turn off swapfile
 opt.swapfile = false
+
+-- sessions (auto-session): include localoptions so filetype/highlighting are
+-- restored directly instead of re-detected (which re-runs modelines on every
+-- restored buffer). This is auto-session's own recommended value.
+opt.sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,terminal,localoptions"

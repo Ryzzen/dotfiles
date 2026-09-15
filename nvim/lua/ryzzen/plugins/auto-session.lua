@@ -2,7 +2,7 @@ return {
 	"rmagatti/auto-session",
 	config = function()
 		require("auto-session").setup({
-			auto_session_supress_dirs = { "~/", "~/Desktop", "~/Documents", "~/Downloads", "~/Pictures", "~/Videos" },
+			suppressed_dirs = { "~/", "~/Desktop", "~/Documents", "~/Downloads", "~/Pictures", "~/Videos" },
 		})
 
 		-- Keymaps
