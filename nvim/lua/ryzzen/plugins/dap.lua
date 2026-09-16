@@ -54,10 +54,10 @@ return {
     { "<leader>bq", function() require("dap").terminate() end, desc = "DAP: quit / terminate" },
     -- Browse breakpoints in Telescope. nvim-dap can dump them to the quickfix
     -- list, so populate it silently (no copen) and hand that to Telescope's
-    -- quickfix picker — no extra plugin needed. <leader>fb is already
-    -- Telescope buffers, hence the capital B.
+    -- quickfix picker — no extra plugin needed. (Telescope buffers moved to
+    -- <leader>fB to free this key; see plugins/telescope.lua.)
     {
-      "<leader>fB",
+      "<leader>fb",
       function()
         require("dap").list_breakpoints(false)
         if vim.tbl_isempty(vim.fn.getqflist()) then
