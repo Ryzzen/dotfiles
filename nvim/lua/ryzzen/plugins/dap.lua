@@ -38,6 +38,11 @@ return {
     { "<F12>", function() require("dap").step_out() end, desc = "DAP: step out" },
     { "<leader>db", function() require("dap").toggle_breakpoint() end, desc = "DAP: toggle breakpoint" },
     { "<leader>dB", function() require("dap").set_breakpoint(vim.fn.input("Condition: ")) end, desc = "DAP: conditional breakpoint" },
+    -- Clears ALL breakpoints, including the phantom entries the adapter injects
+    -- for pseudo-sources ("[Unknown/Just-In-Time compiled code]", shown under a
+    -- bogus buffer number) — <leader>db can't touch those, it only toggles the
+    -- breakpoint on the current buffer+line.
+    { "<leader>dx", function() require("dap").clear_breakpoints() end, desc = "DAP: clear ALL breakpoints" },
     { "<leader>dc", function() require("dap").run_to_cursor() end, desc = "DAP: run to cursor" },
     { "<leader>dr", function() require("dap").repl.toggle() end, desc = "DAP: REPL" },
     { "<leader>du", function() require("dapui").toggle() end, desc = "DAP: toggle UI" },
