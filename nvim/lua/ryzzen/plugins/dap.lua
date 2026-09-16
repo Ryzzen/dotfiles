@@ -7,7 +7,7 @@
 -- until it's listening, attaches gdb with the project's symbols, opens the
 -- debugger UI in its own tab, and tears the server + tab down when you stop.
 --
--- .debug/nvim-dap.json  (paths are relative to the project root):
+-- .nvim/nvim-dap.json  (paths are relative to the project root):
 --   {
 --     "name":    "My board (OpenOCD + attach)",
 --     "program": "build/app_ns.elf",            // primary ELF (has the source)
@@ -87,11 +87,11 @@ return {
       if not root then
         local buf = vim.api.nvim_buf_get_name(bufnr)
         local start = (buf ~= "" and vim.fs.dirname(buf)) or vim.fn.getcwd()
-        local hit = vim.fs.find(".debug", { upward = true, type = "directory", path = start })[1]
+        local hit = vim.fs.find(".nvim", { upward = true, type = "directory", path = start })[1]
         root = hit and vim.fs.dirname(hit) or nil
       end
       if not root then return nil end
-      local file = root .. "/.debug/nvim-dap.json"
+      local file = root .. "/.nvim/nvim-dap.json"
       if vim.fn.filereadable(file) == 0 then return nil end
       local ok, data = pcall(vim.json.decode, table.concat(vim.fn.readfile(file), "\n"))
       if not ok or type(data) ~= "table" then
@@ -135,6 +135,11 @@ return {
     end
     if dap.providers and dap.providers.configs then
       dap.providers.configs["dap-openocd-project"] = provide
+      -- Don't auto-load .vscode/launch.json in nvim: its configs (e.g. the
+      -- cortex-debug entry kept for the VS Code teammates) can't run under
+      -- nvim-dap and would add a dead second entry to the <F5> picker. The
+      -- project's .nvim/nvim-dap.json is the single source of truth here.
+      dap.providers.configs["dap.launch.json"] = nil
     else -- older nvim-dap without providers: fall back to a FileType autocmd
       vim.api.nvim_create_autocmd("FileType", {
         pattern = { "c", "cpp" },
