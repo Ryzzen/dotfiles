@@ -32,15 +32,18 @@ return {
   },
   keys = {
     { "<F5>", function() require("dap").continue() end, desc = "DAP: continue / start" },
+    { "<F6>", function() require("dap").pause() end, desc = "DAP: pause" },
     { "<F10>", function() require("dap").step_over() end, desc = "DAP: step over" },
     { "<F11>", function() require("dap").step_into() end, desc = "DAP: step into" },
     { "<F12>", function() require("dap").step_out() end, desc = "DAP: step out" },
     { "<leader>db", function() require("dap").toggle_breakpoint() end, desc = "DAP: toggle breakpoint" },
     { "<leader>dB", function() require("dap").set_breakpoint(vim.fn.input("Condition: ")) end, desc = "DAP: conditional breakpoint" },
+    { "<leader>dc", function() require("dap").run_to_cursor() end, desc = "DAP: run to cursor" },
     { "<leader>dr", function() require("dap").repl.toggle() end, desc = "DAP: REPL" },
     { "<leader>du", function() require("dapui").toggle() end, desc = "DAP: toggle UI" },
-    { "<leader>dc", function() require("dap").run_to_cursor() end, desc = "DAP: run to cursor" },
-    { "<leader>dt", function() require("dap").terminate() end, desc = "DAP: terminate" },
+    { "<leader>dl", function() require("dap").run_last() end, desc = "DAP: run last" },
+    { "<leader>dd", function() require("dap").disconnect() end, desc = "DAP: disconnect (leave running)" },
+    { "<leader>dq", function() require("dap").terminate() end, desc = "DAP: quit / terminate" },
   },
   config = function()
     local dap = require("dap")
