@@ -1,13 +1,27 @@
--- Graphical debugging (nvim-dap) for the Liberty v2.5 STM32H573 firmware.
+-- Generic OpenOCD / Cortex-M debugging for nvim-dap. NOTHING here is project-
+-- specific: each project describes itself in `.debug/nvim-dap.json` at its root,
+-- and this config discovers that file, builds the debug configuration from it,
+-- and manages the (dockerized) OpenOCD server it names.
 --
--- Just press <F5>. It does the whole dance itself: finds the project (the
--- nearest ancestor holding .debug/openocd.cfg), starts the dockerized OpenOCD
--- server (`make openocd`, a NAMED container), waits for it to listen on :3333,
--- attaches the cpptools/gdb session with BOTH TrustZone worlds' symbols, and on
--- stop tears OpenOCD back down (`make openocd-stop`). Nothing to launch by hand.
+-- <F5> in a C/C++ buffer under such a project: starts the OpenOCD server, waits
+-- until it's listening, attaches gdb with the project's symbols, opens the
+-- debugger UI in its own tab, and tears the server + tab down when you stop.
 --
--- If you already ran `make openocd` yourself, it detects the running container
--- and just attaches — and leaves it running when you stop.
+-- .debug/nvim-dap.json  (paths are relative to the project root):
+--   {
+--     "name":    "My board (OpenOCD + attach)",
+--     "program": "build/app_ns.elf",            // primary ELF (has the source)
+--     "symbols": ["build/app_s.elf"],           // extra symbol files (optional)
+--     "gdb":     "arm-none-eabi-gdb",           // optional
+--     "server":  "localhost:3333",              // gdb remote  (optional)
+--     "stopAtConnect": true,                     // optional (default true)
+--     "openocd": {                               // omit to attach to a manual server
+--       "start":     ["make", "openocd"],
+--       "stop":      ["make", "openocd-stop"],
+--       "ready":     "Listening on port 3333",   // output line meaning "server up"
+--       "container": "liberty-ocd"               // docker name → detect a manual one
+--     }
+--   }
 
 return {
   "mfussenegger/nvim-dap",
@@ -35,65 +49,142 @@ return {
     dapui.setup()
     require("nvim-dap-virtual-text").setup()
 
-    -- Open/close the debugger UI with the session.
-    dap.listeners.after.event_initialized["dapui_config"] = function() dapui.open() end
-    dap.listeners.before.event_terminated["dapui_config"] = function() dapui.close() end
-    dap.listeners.before.event_exited["dapui_config"] = function() dapui.close() end
-
     vim.fn.sign_define("DapBreakpoint", { text = "●", texthl = "DiagnosticError", numhl = "" })
     vim.fn.sign_define("DapBreakpointCondition", { text = "◆", texthl = "DiagnosticWarn", numhl = "" })
     vim.fn.sign_define("DapStopped", { text = "▶", texthl = "DiagnosticInfo", linehl = "Visual", numhl = "" })
 
-    -- ── OpenOCD lifecycle ────────────────────────────────────────────────────
-    -- Module-local state so the stop hooks can find (and only kill) a server we
-    -- started ourselves.
-    local ocd = { job = nil, ours = false }
-    local OCD_NAME = "liberty-ocd"
-
-    -- Project root: where the GNUmakefile lives, so `make openocd` runs there.
-    -- (Markers must be root-level files — a path like ".debug/openocd.cfg" makes
-    -- vim.fs.root return the .debug dir, not the root.)
-    local function project_root()
-      if vim.fs and vim.fs.root then
-        local r = vim.fs.root(0, { "GNUmakefile", ".git" })
-        if r then return r end
+    -- ── Debugger UI in its own tab ───────────────────────────────────────────
+    -- Opens when the session starts, and the whole tab closes when it ends — by
+    -- Terminate (■), Disconnect, or the program exiting — dropping you back in
+    -- your code, never leaving a dead UI behind. (Terminate and Disconnect still
+    -- differ where it counts: Terminate releases the board halted; Disconnect
+    -- detaches and leaves the firmware running. Both then release OpenOCD.)
+    local dbg_tab = nil
+    local function open_dbg_ui()
+      vim.cmd("tabnew")
+      dbg_tab = vim.api.nvim_get_current_tabpage()
+      dapui.open()
+    end
+    local function close_dbg_ui()
+      pcall(function() dapui.close() end)
+      if dbg_tab and vim.api.nvim_tabpage_is_valid(dbg_tab) and vim.fn.tabpagenr("$") > 1 then
+        pcall(function() vim.cmd(vim.api.nvim_tabpage_get_number(dbg_tab) .. "tabclose") end)
       end
-      local buf = vim.api.nvim_buf_get_name(0)
-      local start = (buf ~= "" and vim.fs.dirname(buf)) or vim.fn.getcwd()
-      local hit = vim.fs.find("GNUmakefile", { upward = true, path = start })[1]
-      return hit and vim.fs.dirname(hit) or vim.fn.getcwd()
+      dbg_tab = nil
+    end
+    dap.listeners.after.event_initialized["dapui_config"] = open_dbg_ui
+    dap.listeners.before.event_terminated["dapui_config"] = close_dbg_ui
+    dap.listeners.before.event_exited["dapui_config"] = close_dbg_ui
+    dap.listeners.before.disconnect["dapui_config"] = close_dbg_ui
+
+    -- ── Per-project discovery: .debug/nvim-dap.json ──────────────────────────
+    local function find_project(bufnr)
+      bufnr = bufnr or 0
+      local root
+      if vim.fs and vim.fs.root then
+        root = vim.fs.root(bufnr, { ".git", "GNUmakefile", "Makefile" })
+      end
+      if not root then
+        local buf = vim.api.nvim_buf_get_name(bufnr)
+        local start = (buf ~= "" and vim.fs.dirname(buf)) or vim.fn.getcwd()
+        local hit = vim.fs.find(".debug", { upward = true, type = "directory", path = start })[1]
+        root = hit and vim.fs.dirname(hit) or nil
+      end
+      if not root then return nil end
+      local file = root .. "/.debug/nvim-dap.json"
+      if vim.fn.filereadable(file) == 0 then return nil end
+      local ok, data = pcall(vim.json.decode, table.concat(vim.fn.readfile(file), "\n"))
+      if not ok or type(data) ~= "table" then
+        vim.notify("nvim-dap: could not parse " .. file, vim.log.levels.WARN)
+        return nil
+      end
+      return root, data
     end
 
-    -- Is our OpenOCD container already running (e.g. a manual `make openocd`)?
-    local function openocd_running()
-      local out = vim.fn.system({ "docker", "ps", "-q", "-f", "name=" .. OCD_NAME })
+    -- Build a cppdbg config from the project description.
+    local function build_config(root, p)
+      local setup = { { text = "-enable-pretty-printing", ignoreFailures = true } }
+      for _, s in ipairs(p.symbols or {}) do
+        table.insert(setup, { text = "add-symbol-file " .. root .. "/" .. s, ignoreFailures = true })
+      end
+      table.insert(setup, { text = "set mem inaccessible-by-default off", ignoreFailures = true })
+      return {
+        name = p.name or "OpenOCD attach",
+        type = "cppdbg",
+        request = "launch",
+        program = root .. "/" .. (p.program or ""),
+        cwd = root,
+        MIMode = "gdb",
+        miDebuggerPath = p.gdb or "arm-none-eabi-gdb",
+        miDebuggerServerAddress = p.server or "localhost:3333",
+        stopAtConnect = (p.stopAtConnect ~= false),
+        externalConsole = false,
+        setupCommands = setup,
+        _openocd = p.openocd, -- carried to the adapter for lifecycle management
+        _root = root,
+      }
+    end
+
+    -- Offer the project's debug config for C/C++ buffers, computed per buffer.
+    local function provide(bufnr)
+      local ft = vim.bo[bufnr].filetype
+      if ft ~= "c" and ft ~= "cpp" then return {} end
+      local root, p = find_project(bufnr)
+      if not root then return {} end
+      return { build_config(root, p) }
+    end
+    if dap.providers and dap.providers.configs then
+      dap.providers.configs["dap-openocd-project"] = provide
+    else -- older nvim-dap without providers: fall back to a FileType autocmd
+      vim.api.nvim_create_autocmd("FileType", {
+        pattern = { "c", "cpp" },
+        callback = function(ev)
+          local cfgs = provide(ev.buf)
+          if #cfgs > 0 then
+            dap.configurations.c = cfgs
+            dap.configurations.cpp = cfgs
+          end
+        end,
+      })
+    end
+
+    -- ── Generic OpenOCD lifecycle (driven entirely by config._openocd) ───────
+    local ocd = { job = nil, ours = false, stop = nil, root = nil }
+    local function container_up(name)
+      if not name then return false end
+      local out = vim.fn.system({ "docker", "ps", "-q", "-f", "name=" .. name })
       return (out or ""):gsub("%s", "") ~= ""
     end
-
     local function stop_openocd()
       if not ocd.ours then return end -- never kill a server the user started
       ocd.ours = false
       if ocd.job then pcall(vim.fn.jobstop, ocd.job); ocd.job = nil end
-      -- Guaranteed teardown by container name, whatever the make/job tree looks like.
-      vim.fn.jobstart({ "make", "openocd-stop" }, { cwd = project_root(), detach = true })
+      if ocd.stop and ocd.root then vim.fn.jobstart(ocd.stop, { cwd = ocd.root, detach = true }) end
+      ocd.stop, ocd.root = nil, nil
     end
-    dap.listeners.after.event_terminated["liberty_ocd"] = stop_openocd
-    dap.listeners.after.event_exited["liberty_ocd"] = stop_openocd
-    dap.listeners.after.disconnect["liberty_ocd"] = stop_openocd
+    dap.listeners.after.event_terminated["dap_openocd"] = stop_openocd
+    dap.listeners.after.event_exited["dap_openocd"] = stop_openocd
+    dap.listeners.after.disconnect["dap_openocd"] = stop_openocd
     vim.api.nvim_create_autocmd("VimLeavePre", { callback = function() stop_openocd() end })
 
-    -- cpptools adapter (OpenDebugAD7 on PATH via the embedded home-manager
-    -- profile), wrapped so it stands OpenOCD up first when nothing is listening.
+    -- cpptools adapter (OpenDebugAD7 on PATH), wrapped so it stands the project's
+    -- OpenOCD server up first when nothing is already listening.
     local cppdbg = { id = "cppdbg", type = "executable", command = "OpenDebugAD7" }
-    dap.adapters.cppdbg = function(callback, _config)
-      if openocd_running() then
-        ocd.ours = false -- attach to the user's server, don't manage it
+    dap.adapters.cppdbg = function(callback, config)
+      local oc = config._openocd
+      if not oc or not oc.start then
+        callback(cppdbg) -- no managed server for this project — attach as-is
+        return
+      end
+      if container_up(oc.container) then
+        ocd.ours = false -- attach to the running (manual) server, don't manage it
         callback(cppdbg)
         return
       end
 
-      local root = project_root()
-      ocd.ours = true
+      local root = config._root or vim.fn.getcwd()
+      local ready = oc.ready or "Listening on port 3333"
+      ocd.ours, ocd.stop, ocd.root = true, oc.stop, root
       local attached = false
       local function attach_once()
         if attached then return end
@@ -103,14 +194,12 @@ return {
       local function watch(_, data)
         if not data then return end
         for _, line in ipairs(data) do
-          if type(line) == "string" and line:find("Listening on port 3333", 1, true) then
-            vim.schedule(attach_once)
-          end
+          if type(line) == "string" and line:find(ready, 1, true) then vim.schedule(attach_once) end
         end
       end
 
-      vim.notify("Liberty: starting OpenOCD…", vim.log.levels.INFO)
-      ocd.job = vim.fn.jobstart({ "make", "openocd" }, {
+      vim.notify("Debug: starting OpenOCD…", vim.log.levels.INFO)
+      ocd.job = vim.fn.jobstart(oc.start, {
         cwd = root,
         on_stdout = watch,
         on_stderr = watch,
@@ -118,40 +207,15 @@ return {
       })
       if not ocd.job or ocd.job <= 0 then
         ocd.ours = false
-        vim.notify("Liberty: could not launch `make openocd` in " .. root, vim.log.levels.ERROR)
+        vim.notify("Debug: could not launch OpenOCD (" .. table.concat(oc.start, " ") .. ")", vim.log.levels.ERROR)
         return
       end
-      -- Fail loudly (and clean up) if it never comes up — board unplugged, etc.
       vim.defer_fn(function()
         if not attached then
-          vim.notify("Liberty: OpenOCD didn't reach :3333 — is the board connected?", vim.log.levels.ERROR)
+          vim.notify("Debug: OpenOCD didn't come up (waiting for \"" .. ready .. "\") — board connected?", vim.log.levels.ERROR)
           stop_openocd()
         end
       end, 25000)
     end
-
-    -- Liberty v2.5 (STM32H573, TrustZone). <F5> auto-manages OpenOCD (above) and
-    -- attaches over its gdb server on :3333, loading both worlds' symbols so
-    -- breakpoints resolve across the secure/non-secure boundary.
-    local liberty = {
-      name = "Liberty v2.5 (auto: OpenOCD + attach)",
-      type = "cppdbg",
-      request = "launch",
-      program = "${workspaceFolder}/Makefile/NonSecure/build/Libertyv2.5_NS.elf",
-      cwd = "${workspaceFolder}",
-      MIMode = "gdb",
-      miDebuggerPath = "arm-none-eabi-gdb",
-      miDebuggerServerAddress = "localhost:3333",
-      stopAtConnect = true,
-      externalConsole = false,
-      setupCommands = {
-        { text = "-enable-pretty-printing", ignoreFailures = true },
-        { text = "add-symbol-file ${workspaceFolder}/Makefile/Secure/build/Libertyv2.5_S.elf", ignoreFailures = true },
-        { text = "set mem inaccessible-by-default off", ignoreFailures = true },
-      },
-    }
-
-    dap.configurations.cpp = { liberty }
-    dap.configurations.c = { liberty }
   end,
 }
