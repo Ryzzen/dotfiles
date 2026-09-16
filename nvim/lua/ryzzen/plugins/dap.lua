@@ -36,22 +36,21 @@ return {
     { "<F10>", function() require("dap").step_over() end, desc = "DAP: step over" },
     { "<F11>", function() require("dap").step_into() end, desc = "DAP: step into" },
     { "<F12>", function() require("dap").step_out() end, desc = "DAP: step out" },
-    -- Debug lives under <leader>b (not <leader>d): <leader>d alone is
-    -- vim.diagnostic.open_float from the LSP config, and making it a prefix
-    -- would stall it for 'timeoutlen' on every press.
-    { "<leader>bb", function() require("dap").toggle_breakpoint() end, desc = "DAP: toggle breakpoint" },
-    { "<leader>bB", function() require("dap").set_breakpoint(vim.fn.input("Condition: ")) end, desc = "DAP: conditional breakpoint" },
+    -- Debug owns the <leader>d prefix; the LSP diagnostics/code keys live under
+    -- <leader>c (see plugins/lsp/lspconfig.lua), so nothing here shadows them.
+    { "<leader>db", function() require("dap").toggle_breakpoint() end, desc = "DAP: toggle breakpoint" },
+    { "<leader>dB", function() require("dap").set_breakpoint(vim.fn.input("Condition: ")) end, desc = "DAP: conditional breakpoint" },
     -- Clears ALL breakpoints, including the phantom entries the adapter injects
     -- for pseudo-sources ("[Unknown/Just-In-Time compiled code]", shown under a
-    -- bogus buffer number) — <leader>bb can't touch those, it only toggles the
+    -- bogus buffer number) — <leader>db can't touch those, it only toggles the
     -- breakpoint on the current buffer+line.
-    { "<leader>bx", function() require("dap").clear_breakpoints() end, desc = "DAP: clear ALL breakpoints" },
-    { "<leader>bc", function() require("dap").run_to_cursor() end, desc = "DAP: run to cursor" },
-    { "<leader>br", function() require("dap").repl.toggle() end, desc = "DAP: REPL" },
-    { "<leader>bu", function() require("dapui").toggle() end, desc = "DAP: toggle UI" },
-    { "<leader>bl", function() require("dap").run_last() end, desc = "DAP: run last" },
-    { "<leader>bd", function() require("dap").disconnect() end, desc = "DAP: disconnect (leave running)" },
-    { "<leader>bq", function() require("dap").terminate() end, desc = "DAP: quit / terminate" },
+    { "<leader>dx", function() require("dap").clear_breakpoints() end, desc = "DAP: clear ALL breakpoints" },
+    { "<leader>dc", function() require("dap").run_to_cursor() end, desc = "DAP: run to cursor" },
+    { "<leader>dr", function() require("dap").repl.toggle() end, desc = "DAP: REPL" },
+    { "<leader>du", function() require("dapui").toggle() end, desc = "DAP: toggle UI" },
+    { "<leader>dl", function() require("dap").run_last() end, desc = "DAP: run last" },
+    { "<leader>dd", function() require("dap").disconnect() end, desc = "DAP: disconnect (leave running)" },
+    { "<leader>dq", function() require("dap").terminate() end, desc = "DAP: quit / terminate" },
     -- Browse breakpoints in Telescope. nvim-dap can dump them to the quickfix
     -- list, so populate it silently (no copen) and hand that to Telescope's
     -- quickfix picker — no extra plugin needed. (Telescope buffers moved to

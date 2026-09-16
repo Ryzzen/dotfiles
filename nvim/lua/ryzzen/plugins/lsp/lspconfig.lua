@@ -29,7 +29,10 @@ return {
 				keymap.set("n", "<leader>rn", vim.lsp.buf.rename, opts) -- smart rename
 
 				opts.desc = "Show line diagnostics"
-				keymap.set("n", "<leader>d", vim.diagnostic.open_float, opts) -- show diagnostics for line
+				-- <leader>cd, not a bare <leader>d: the debugger (nvim-dap) owns the
+				-- <leader>d prefix, and a bare <leader>d would stall for 'timeoutlen'
+				-- on every press while nvim waits to see if a debug key follows.
+				keymap.set("n", "<leader>cd", vim.diagnostic.open_float, opts) -- show diagnostics for line
 
 				opts.desc = "Show documentation for what is under cursor"
 				keymap.set("n", "K", vim.lsp.buf.hover, opts) -- show documentation for what is under cursor
