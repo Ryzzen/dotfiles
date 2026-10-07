@@ -205,6 +205,43 @@ return {
 		}
 		vim.lsp.enable("dockerls")
 
+		-- Markdown. Both binaries come from nix (programs.neovim.extraPackages in
+		-- nix-config's baseline.nix), not Mason, like nil/ccls.
+		--
+		-- marksman: links and headings. gd follows [x](file.md#heading), gr on a
+		-- heading lists what links to it, completion of paths/#anchors, broken
+		-- link diagnostics, headings as document symbols (<leader>fs).
+		vim.lsp.config["marksman"] = {
+			capabilities = capabilities,
+			cmd = { "marksman", "server" },
+			filetypes = { "markdown" },
+			root_markers = { ".marksman.toml", ".git" },
+			single_file_support = true,
+		}
+		vim.lsp.enable("marksman")
+
+		-- harper: offline grammar checker. Its default filetypes include source
+		-- code comments; keep it to prose. Spelling is left to vim's 'spell'
+		-- (after/ftplugin/markdown.lua) so typos aren't flagged twice.
+		-- Fixes are code actions: <leader>ca.
+		vim.lsp.config["harper_ls"] = {
+			capabilities = capabilities,
+			cmd = { "harper-ls", "--stdio" },
+			filetypes = { "markdown", "gitcommit", "text" },
+			root_markers = { ".git" },
+			settings = {
+				["harper-ls"] = {
+					dialect = "American",
+					linters = {
+						SpellCheck = false,
+						SentenceCapitalization = false, -- trips on `code`-led list items
+						UseTitleCase = false, -- docs use sentence-case headings
+					},
+				},
+			},
+		}
+		vim.lsp.enable("harper_ls")
+
 		vim.lsp.config["jdtls"] = {}
 		vim.lsp.enable("jdtls")
 

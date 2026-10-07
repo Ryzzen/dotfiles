@@ -18,6 +18,12 @@ return {
 		keymap.set("n", "<leader>fB", "<cmd>Telescope buffers<CR>", { desc = "Find buffer" }) -- fb is DAP breakpoints (see plugins/dap.lua)
 		keymap.set("n", "<leader>fh", "<cmd>Telescope help_tags<CR>", { desc = "Find help" })
 		keymap.set("n", "<leader>fd", "<cmd>Telescope diagnostics bufnr=0<CR>", { desc = "Show buffer diagnostics" }) -- show  diagnostics for file
+		keymap.set(
+			"n",
+			"<leader>fs",
+			"<cmd>Telescope lsp_document_symbols<CR>",
+			{ desc = "Find symbol (markdown: heading)" }
+		)
 		keymap.set("n", "gr", "<cmd>Telescope lsp_references<CR>", { desc = "Find symbol reference" })
 		keymap.set("n", "gd", "<cmd>Telescope lsp_definitions<CR>", { desc = "Find symbol definition" })
 		keymap.set("n", "gi", "<cmd>Telescope lsp_implementations<CR>", { desc = "Find symbol implementation" })

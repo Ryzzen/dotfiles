@@ -28,13 +28,13 @@ vim.lsp.enable("<server>")
 
 `root_markers` must be a flat list of strings. The priority-group syntax `{ {".luarc.json", ".luarc.jsonc"}, ".git" }` is documented but breaks `vim.fs.find` on 0.11.1 (`invalid value (table) at index 2 in table for 'concat'`) — keep markers flat.
 
-Servers are installed via `mason.lua` (`ensure_installed`), then configured in `lspconfig.lua`. Both lists must be kept in sync for a server to actually work.
+Servers are installed via `mason.lua` (`ensure_installed`), then configured in `lspconfig.lua`. Both lists must be kept in sync for a server to actually work. Exception: some binaries come from nix instead (nix-config `home-manager/baseline.nix`, `programs.neovim.extraPackages`), currently `marksman`, `harper-ls` and `markdownlint-cli2`; those are configured in `lspconfig.lua` / `linter.lua` but deliberately absent from `mason.lua`.
 
 ## Templates and auto-headers
 
 `core/auto-headers.lua` injects template files on `BufNewFile` for `*.h`, `*.hpp`, `*.pwn.py`. Templates live in `templates/` and use a literal `NAME` token that is replaced by the file's basename via inline `:g/NAME/s//.../` substitutions. Editing a template means also checking the line numbers in `auto-headers.lua` — they hardcode the substitution range and the final cursor position.
 
-`luasnippets/` holds LuaSnip snippet sources (currently `c.lua`).
+`luasnippets/` holds LuaSnip snippet sources (`c.lua`, `markdown.lua`).
 
 ## Path coupling
 

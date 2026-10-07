@@ -1,0 +1,16 @@
+# Default markdownlint rules for nvim-lint (plugins/linter.lua passes this with
+# --config). A repo's own .markdownlint* file still applies on top of it.
+#
+# Formatting is prettier's job (conform, on save), so rules here only catch
+# what prettier doesn't: broken heading levels, missing code-fence languages,
+# bare URLs, empty links, etc. Turned off: rules that fight prettier or flag
+# normal README / report writing.
+
+default: true
+
+MD013: false # line length: prose is soft-wrapped, never hard-wrapped
+MD033: false # inline HTML: badges, <details>, <img width=…> in READMEs
+MD041: false # first line must be a heading: READMEs often open with a logo/badges
+MD036: false # emphasis as heading: "**Severity:** High" in findings
+MD024:
+  siblings_only: true # same "Impact"/"Remediation" heading under each finding
