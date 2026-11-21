@@ -138,8 +138,15 @@ hl.bind(mainMod .. " + L",      hl.dsp.exec_cmd('swaylock --image "$(< "${HOME}/
 -- so if the states have drifted apart it inverts them instead of unifying them.
 -- The test is "is ANY enabled monitor still on?" -> force them all off, else all on.
 -- `hyprctl monitors` lists only enabled outputs, so a disabled panel is ignored.
+--
+-- `hyprctl dispatch` takes LUA in 0.57, not the old keyword syntax: the legacy
+-- `hyprctl dispatch dpms off` now fails with
+--     [string "return hl.dispatch(dpms off)"]:1: ')' expected near 'off'
+-- so this bind fired and did nothing until the two calls were rewritten. The
+-- compositor log shows the exec happening, which is why it looked like the bind
+-- itself was broken.
 hl.bind(mainMod .. " + O",
-    hl.dsp.exec_cmd('if hyprctl monitors | grep -q "dpmsStatus: 1"; then hyprctl dispatch dpms off; else hyprctl dispatch dpms on; fi'),
+    hl.dsp.exec_cmd('if hyprctl monitors | grep -q "dpmsStatus: 1"; then hyprctl dispatch \'hl.dsp.dpms({ action = "off" })\'; else hyprctl dispatch \'hl.dsp.dpms({ action = "on" })\'; fi'),
     { locked = true })
 
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("~/.config/ressources/scripts/change_wallpaper.sh"))
